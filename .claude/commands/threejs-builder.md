@@ -1,0 +1,1 @@
+/Users/declanmalone/Desktop/ThreeProjects/project1/.agents/skills/threejs-builder/SKILL.md
