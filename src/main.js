@@ -508,6 +508,9 @@ function init() {
       rawBox.getSize(rawSize);
       const scaleFactor = PH / rawSize.y;
 
+      // Space Black material — replaces GLB's baked purple textures
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: 0.08, metalness: 0.20 });
+
       phoneOffsets.forEach((offsetX, i) => {
         const model = template.clone(true);
         scene.add(model);
@@ -532,6 +535,17 @@ function init() {
           const cssRadius = SCREEN_CORNER_R / (ss.x / SW);
           screenObj.element.style.borderRadius = `${cssRadius.toFixed(1)}px`;
         }
+
+        // Override GLB's purple textures with Space Black
+        const screenMesh = screenInfo?.mesh;
+        model.traverse(child => {
+          if (!child.isMesh || child === screenMesh) return;
+          const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+          if (!mat?.color) return;
+          const { r, g, b } = mat.color;
+          if ((r + g + b) / 3 < 0.08) return; // keep near-black (lenses, screen bezel)
+          child.material = darkMat;
+        });
       });
 
       proceduralPhones.forEach(p => p.visible = false);
