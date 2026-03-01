@@ -334,7 +334,7 @@ function init() {
 
     // ── Load GLB, clone once per phone slot ───────────────────────────────
     const loader = new GLTFLoader();
-    loader.load('/1b338ec19f15ad72904b%20(1).gltf', (gltf) => {
+    loader.load('/i_phone12.glb', (gltf) => {
       // Compute scale factor once from the template
       const template = gltf.scene;
       template.updateMatrixWorld(true);
