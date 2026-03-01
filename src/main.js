@@ -14,16 +14,30 @@ const SITES = [
 const PROTO_NAMES = ['Prototype 1', 'Prototype 2', 'Prototype 3'];
 
 const INSIGHTS = [
-  'Initial reaction of delight when noticing the matching set feature in the quick add modal.',
-  'Users dislike upselling in the basket as it feels pushy — but serving products at the point of buying intent feels more organic.',
-  'Initially confused whether the single matching item was in their basket, but confidence grew when multiple products were shown in the container.',
-  'Feedback noted the add-to-cart felt too instant with no visual feedback — this has since been resolved.',
-  'Positive responses to the first modal screen — users liked seeing only relevant info, with the option to explore more on the product page.',
-  'Users praised the clean UI: size buttons were easy to tap and add to cart was intuitive.',
-  'Users effortlessly navigated back to the collection via the breadcrumb button on the product page.',
-  "When prompted to find a different colour, almost all users clicked '10 colors available' — they found it clear and obvious.",
-  'All users agreed that adding the matching set at this stage in their journey felt natural and delightful.',
-  'The "Continue Shopping" primary CTA was well received — users liked not being pushed to checkout and found it easy to return to the collection.',
+  // Prototype 1
+  [
+    'Image filter buttons were intuitive, with clear visibility of active vs. default states.',
+    '~60% missed the grid toggle; of those who noticed, half valued it for quick browsing while the rest had no interest in the feature.',
+    'Colour filters were popular but users gravitated toward filtering by colour over product type; moving colour into the filter panel had no notable UX impact.',
+    'Collection property scales were more informative than labels alone, giving users a clearer sense of collection DNA.',
+    'Users found the model size button on the product image very useful as it is information they look for when making a purchase. DFYNE staff noted that it would help users as sizing is a very common issue from customers.',
+  ],
+  // Prototype 2
+  [
+    'Initial reaction of delight when noticing the matching set feature in the quick add modal.',
+    'Users dislike upselling in the basket as it feels pushy — but serving products at the point of buying intent feels more organic.',
+    'Initially confused whether the single matching item was in their basket, but confidence grew when multiple products were shown in the container.',
+    'Feedback noted the add-to-cart felt too instant with no visual feedback — this has since been resolved.',
+    'Positive responses to the first modal screen — users liked seeing only relevant info, with the option to explore more on the product page.',
+  ],
+  // Prototype 3
+  [
+    'Users praised the clean UI: size buttons were easy to tap and add to cart was intuitive.',
+    'Users effortlessly navigated back to the collection via the breadcrumb button on the product page.',
+    "When prompted to find a different colour, almost all users clicked '10 colors available' — they found it clear and obvious.",
+    'All users agreed that adding the matching set at this stage in their journey felt natural and delightful.',
+    'The "Continue Shopping" primary CTA was well received — users liked not being pushed to checkout and found it easy to return to the collection.',
+  ],
 ];
 
 // iPhone dimensions (393×852 screen, scaled to PH)
@@ -272,7 +286,7 @@ function createNotesPanel() {
 }
 
 function showPanel(panel, index, onClose) {
-  const insightsHTML = INSIGHTS.map(text =>
+  const insightsHTML = INSIGHTS[index].map(text =>
     `<li style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;">
        <span style="width:6px;height:6px;border-radius:50%;background:#646cff;margin-top:6px;flex-shrink:0;"></span>
        <span style="font-size:13px;line-height:1.65;color:#3a3a3c;">${text}</span>
