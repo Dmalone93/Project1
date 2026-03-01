@@ -439,6 +439,18 @@ function setupUI(css3dEl, controls, onEscape) {
 }
 
 
+// ── Responsive overview distance ──────────────────────────────────────────────
+// On portrait mobile the horizontal FOV is narrow — push the camera back far
+// enough so all 3 phones are visible at once.
+function calcOverviewZ() {
+  const aspect = window.innerWidth / window.innerHeight;
+  const halfFovY = (45 / 2) * (Math.PI / 180);
+  const halfFovX = Math.atan(Math.tan(halfFovY) * aspect);
+  // Need the frustum half-width ≥ outermost phone + padding
+  const needed = (PHONE_SPACING + 500) / Math.tan(halfFovX);
+  return Math.max(CAM_Z, needed);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 function init() {
   try {
@@ -446,9 +458,10 @@ function init() {
     document.body.style.background = '#f0f0f5';
 
     const camera = new THREE.PerspectiveCamera(
-      45, window.innerWidth / window.innerHeight, 1, 10000
+      45, window.innerWidth / window.innerHeight, 1, 20000
     );
-    camera.position.set(0, 60, CAM_Z);
+    const initZ = calcOverviewZ();
+    camera.position.set(0, 60, initZ);
     camera.lookAt(0, 0, 0);
 
     // ── CSS3D renderer ───────────────────────────────────────────────────
@@ -582,7 +595,7 @@ function init() {
     });
 
     // ── Camera animation state ────────────────────────────────────────────
-    const camTarget  = new THREE.Vector3(0, 60, CAM_Z);
+    const camTarget  = new THREE.Vector3(0, 60, initZ);
     const lookTarget = new THREE.Vector3(0, 0, 0);
     let isCamAnimating = false;
     let focusedPhone = -1;
@@ -602,7 +615,7 @@ function init() {
     function unfocusPhone() {
       if (focusedPhone === -1) return;
       focusedPhone = -1;
-      camTarget.set(0, 60, CAM_Z);
+      camTarget.set(0, 60, calcOverviewZ());
       lookTarget.set(0, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
@@ -690,7 +703,7 @@ function init() {
     controls.dampingFactor = 0.05;
     controls.enablePan = false;
     controls.minDistance = 400;
-    controls.maxDistance = 5000;
+    controls.maxDistance = Math.max(8000, initZ * 1.5);
     controls.minPolarAngle = Math.PI * 0.1;
     controls.maxPolarAngle = Math.PI * 0.9;
     controls.target.set(0, 0, 0);
@@ -704,6 +717,14 @@ function init() {
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
       css3dRenderer.setSize(w, h);
+      // Recalculate overview distance for new orientation (e.g. portrait ↔ landscape)
+      if (focusedPhone === -1) {
+        const oz = calcOverviewZ();
+        controls.maxDistance = Math.max(8000, oz * 1.5);
+        camTarget.set(0, 60, oz);
+        camera.position.set(0, 60, oz);
+        controls.update();
+      }
     });
 
     status('Three.js WebGL — iPhone 16');
