@@ -378,17 +378,16 @@ function createPhoneLabel(name) {
   const div = document.createElement('div');
   div.textContent = name;
   div.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';
-  div.style.fontSize = '72px';
-  div.style.fontWeight = '700';
-  div.style.color = '#1c1c1e';
-  div.style.letterSpacing = '-0.02em';
-  div.style.background = 'rgba(255,255,255,0.82)';
-  div.style.backdropFilter = 'blur(16px)';
-  div.style.borderRadius = '20px';
-  div.style.padding = '12px 28px';
-  div.style.border = '1px solid rgba(0,0,0,0.07)';
+  div.style.fontSize = '38px';
+  div.style.fontWeight = '600';
+  div.style.color = '#3a3a3c';
+  div.style.letterSpacing = '-0.01em';
+  div.style.background = 'rgba(255,255,255,0.65)';
+  div.style.backdropFilter = 'blur(12px)';
+  div.style.borderRadius = '12px';
+  div.style.padding = '7px 16px';
+  div.style.border = '1px solid rgba(0,0,0,0.06)';
   div.style.whiteSpace = 'nowrap';
-  div.style.boxShadow = '0 4px 24px rgba(0,0,0,0.08)';
   return new CSS3DSprite(div);
 }
 
@@ -536,15 +535,18 @@ function init() {
           screenObj.element.style.borderRadius = `${cssRadius.toFixed(1)}px`;
         }
 
-        // Override GLB's purple textures with Space Black
+        // Override GLB's purple textures — only replace saturated (coloured)
+        // materials; leave neutral metallic greys (camera rings etc.) intact
         const screenMesh = screenInfo?.mesh;
         model.traverse(child => {
           if (!child.isMesh || child === screenMesh) return;
           const mat = Array.isArray(child.material) ? child.material[0] : child.material;
           if (!mat?.color) return;
           const { r, g, b } = mat.color;
-          if ((r + g + b) / 3 < 0.08) return; // keep near-black (lenses, screen bezel)
-          child.material = darkMat;
+          const maxC = Math.max(r, g, b);
+          const minC = Math.min(r, g, b);
+          const saturation = maxC > 0.01 ? (maxC - minC) / maxC : 0;
+          if (saturation > 0.12) child.material = darkMat; // only replace purple/coloured parts
         });
       });
 
