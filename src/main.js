@@ -1,20 +1,25 @@
+// @ts-nocheck
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const SITE_URL = 'https://theme-coup-83657991.figma.site';
 
-// iPhone 15 Pro dimensions (scaled ~5×)
-const PW  = 355;   // body width
-const PH  = 726;   // body height
-const PD  = 40;    // depth
-const PR  = 54;    // corner radius (rounder than X)
+// iPhone 16 dimensions (393×852 screen, scaled ~5×)
+const PW  = 430;   // body width
+const PH  = 940;   // body height
+const PD  = 38;    // depth (7.8 mm — thinner than 15 Pro)
+const PR  = 58;    // corner radius (iPhone 16 squircle)
 
-// Screen — near-edge-to-edge with thin bezels
-const SW  = 326;   // screen width
-const SH  = 664;   // screen height
-const SCREEN_Y = -8; // slight chin offset
+// Screen — near-edge-to-edge with very thin bezels
+const SW  = 393;   // screen width  (iPhone 16 logical pts)
+const SH  = 852;   // screen height (iPhone 16 logical pts)
+const SCREEN_Y = -6; // minimal chin offset
+// Corner radius in world units — tune this one value to match the GLB model.
+// world unit ≈ 1 CSS px at scale 1; iPhone 12 ≈ 47pt at 390pt wide ≈ 12 %.
+const SCREEN_CORNER_R = 65;
 
 const CAM_Z = 1300;
 
@@ -45,17 +50,18 @@ function createPhone() {
   const hw = PW / 2, hh = PH / 2;
   const shw = SW / 2, shh = SH / 2;
 
-  // Materials — Space Black Titanium
-  const frame    = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: 0.12, metalness: 0.95 });
-  const glassBack= new THREE.MeshStandardMaterial({ color: 0x0d0d12, roughness: 0.08, metalness: 0.15 });
-  const frontGlass=new THREE.MeshStandardMaterial({ color: 0x060609, roughness: 0.05, metalness: 0.10 });
-  const camMetal = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.10, metalness: 0.98 });
-  const camLens  = new THREE.MeshStandardMaterial({ color: 0x020205, roughness: 0.04, metalness: 0.05 });
-  const camSapph = new THREE.MeshStandardMaterial({ color: 0x0d0d20, roughness: 0.04, metalness: 0.10,
-    transparent: true, opacity: 0.92 });
-  const flash    = new THREE.MeshStandardMaterial({ color: 0xfffbe0, roughness: 0.25,
-    emissive: new THREE.Color(0xaa9955), emissiveIntensity: 0.3 });
-  const port     = new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.9 });
+  // Materials — iPhone 16 White / Natural Titanium
+  const frame    = new THREE.MeshStandardMaterial({ color: 0xd8d8dc, roughness: 0.14, metalness: 0.80 });
+  const glassBack= new THREE.MeshStandardMaterial({ color: 0xf0f0f5, roughness: 0.05, metalness: 0.12,
+    envMapIntensity: 1.2 });
+  const frontGlass=new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.04, metalness: 0.10 });
+  const camMetal = new THREE.MeshStandardMaterial({ color: 0xb8b8be, roughness: 0.08, metalness: 0.96 });
+  const camLens  = new THREE.MeshStandardMaterial({ color: 0x010103, roughness: 0.03, metalness: 0.05 });
+  const camSapph = new THREE.MeshStandardMaterial({ color: 0x06060f, roughness: 0.03, metalness: 0.06,
+    transparent: true, opacity: 0.95 });
+  const flash    = new THREE.MeshStandardMaterial({ color: 0xfffbe0, roughness: 0.20,
+    emissive: new THREE.Color(0xffee88), emissiveIntensity: 0.4 });
+  const port     = new THREE.MeshStandardMaterial({ color: 0x888890, roughness: 0.5, metalness: 0.6 });
 
   // ── Front face (bezel ring with screen hole) ──────────────────────────────
   const frontShape = rrShape(PW, PH, PR);
@@ -77,92 +83,137 @@ function createPhone() {
   frontFace.position.z = PD / 2 + 0.5;
   g.add(frontFace);
 
-  // ── Stainless steel side frame (4 bars) ──────────────────────────────────
-  const T = 16; // frame thickness
-  [
-    [0,   hh - T / 2, 0, PW,       T,     PD],
-    [0,  -hh + T / 2, 0, PW,       T,     PD],
-    [-hw + T / 2, 0,  0, T,  PH - T*2, PD],
-    [ hw - T / 2, 0,  0, T,  PH - T*2, PD],
-  ].forEach(([x, y, z, bw, bh, bd]) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), frame);
-    m.position.set(x, y, z);
-    g.add(m);
+  // ── Phone body — single ExtrudeGeometry for true rounded corners ─────────
+  // Bevel rounds the front/back edges; rrShape rounds the corners in XY.
+  const bodyGeo = new THREE.ExtrudeGeometry(rrShape(PW, PH, PR), {
+    depth: PD,
+    bevelEnabled: true,
+    bevelThickness: 5,
+    bevelSize: 4,
+    bevelSegments: 12,
   });
+  // Centre along Z so z=0 is the phone midpoint
+  bodyGeo.translate(0, 0, -PD / 2);
+  const body = new THREE.Mesh(bodyGeo, frame);
+  g.add(body);
 
-  // ── Back glass ────────────────────────────────────────────────────────────
+  // ── Back glass overlay ────────────────────────────────────────────────────
   const backFace = new THREE.Mesh(
-    new THREE.ShapeGeometry(rrShape(PW - 4, PH - 4, PR - 2), 64), glassBack
+    new THREE.ShapeGeometry(rrShape(PW - 6, PH - 6, PR - 3), 80), glassBack
   );
   backFace.rotation.y = Math.PI;
   backFace.position.z = -PD / 2 - 0.5;
   g.add(backFace);
 
-  // Back body fill (sides show the frame frame wrapping around)
-  const backBody = new THREE.Mesh(new THREE.BoxGeometry(PW, PH, PD), glassBack);
-  g.add(backBody);
+  // ── Apple logo (back, vertically centred, slightly above mid) ─────────────
+  // Approximated as a circle with a subtle metallic sheen
+  const appleMat = new THREE.MeshStandardMaterial({
+    color: 0xc8c8d0, roughness: 0.10, metalness: 0.85,
+    transparent: true, opacity: 0.75,
+  });
+  const appleDisc = new THREE.Mesh(new THREE.CircleGeometry(38, 64), appleMat);
+  appleDisc.rotation.y = Math.PI;
+  appleDisc.position.set(0, 60, -PD / 2 - 0.6);
+  g.add(appleDisc);
 
-  // ── Back camera module ────────────────────────────────────────────────────
-  // Raised glass square (top-left of back)
-  const camPad = new THREE.Mesh(
-    new THREE.BoxGeometry(110, 120, 8),
-    new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.10, metalness: 0.15 })
-  );
-  camPad.position.set(-55, hh - 140, -PD / 2 - 4);
+  // ── Back camera module — triple-lens triangle (Pro style) ────────────────
+  const camCX = -58;          // module centre X (top-left quadrant of back)
+  const camCY = hh - 160;     // module centre Y
+
+  // Raised glass pad — squarish, slightly rounded
+  const camPadMat = new THREE.MeshStandardMaterial({
+    color: 0xd0d0d8, roughness: 0.08, metalness: 0.22
+  });
+  const camPad = new THREE.Mesh(new THREE.BoxGeometry(140, 148, 10), camPadMat);
+  camPad.position.set(camCX, camCY, -PD / 2 - 5);
   g.add(camPad);
 
-  // Camera module frame
-  const camFrame = new THREE.Mesh(
-    new THREE.BoxGeometry(108, 118, 10),
-    new THREE.MeshStandardMaterial({ color: 0x2c2c34, roughness: 0.08, metalness: 0.95 })
-  );
-  camFrame.position.set(-55, hh - 140, -PD / 2 - 5.5);
+  // Brushed aluminum module frame ring
+  const camFrameMat = new THREE.MeshStandardMaterial({
+    color: 0xc0c0c8, roughness: 0.06, metalness: 0.97
+  });
+  const camFrame = new THREE.Mesh(new THREE.BoxGeometry(138, 146, 12), camFrameMat);
+  camFrame.position.set(camCX, camCY, -PD / 2 - 6.5);
   g.add(camFrame);
 
-  // Dual lenses (vertical arrangement)
-  [[0, 26], [0, -26]].forEach(([lx, ly]) => {
-    // Outer ring
-    const ring = new THREE.Mesh(new THREE.CylinderGeometry(26, 26, 8, 48), camMetal);
+  // Triple lenses — triangle arrangement (top-left, top-right, bottom-centre)
+  // Matches the Figma reference design
+  const triLenses = [
+    { offset: [-30, 32],  outerR: 26, innerR: 20, glassR: 16 }, // wide (top-left)
+    { offset: [ 30, 32],  outerR: 26, innerR: 20, glassR: 16 }, // ultrawide (top-right)
+    { offset: [  0, -28], outerR: 28, innerR: 22, glassR: 17 }, // telephoto (bottom-centre)
+  ];
+  triLenses.forEach(({ offset: [lx, ly], outerR, innerR, glassR }) => {
+    // Outer housing ring
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(outerR, outerR, 10, 64), camMetal);
     ring.rotation.x = Math.PI / 2;
-    ring.position.set(-55 + lx, hh - 140 + ly, -PD / 2 - 10);
+    ring.position.set(camCX + lx, camCY + ly, -PD / 2 - 12);
     g.add(ring);
 
-    // Inner ring
-    const innerRing = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 10, 48), camLens);
-    innerRing.rotation.x = Math.PI / 2;
-    innerRing.position.set(-55 + lx, hh - 140 + ly, -PD / 2 - 10.5);
-    g.add(innerRing);
+    // Inner lens barrel
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(innerR, innerR, 12, 64), camLens);
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(camCX + lx, camCY + ly, -PD / 2 - 12.5);
+    g.add(barrel);
 
-    // Sapphire lens glass
-    const glass = new THREE.Mesh(new THREE.CircleGeometry(16, 48), camSapph);
-    glass.rotation.y = Math.PI;
-    glass.position.set(-55 + lx, hh - 140 + ly, -PD / 2 - 15.5);
-    g.add(glass);
+    // Sapphire cover glass — outer ring accent
+    const glassRing = new THREE.Mesh(new THREE.CircleGeometry(glassR + 2, 64), camMetal);
+    glassRing.rotation.y = Math.PI;
+    glassRing.position.set(camCX + lx, camCY + ly, -PD / 2 - 17.5);
+    g.add(glassRing);
+
+    // Sapphire cover glass — dark lens face
+    const glassFace = new THREE.Mesh(new THREE.CircleGeometry(glassR, 64), camSapph);
+    glassFace.rotation.y = Math.PI;
+    glassFace.position.set(camCX + lx, camCY + ly, -PD / 2 - 18);
+    g.add(glassFace);
+
+    // Specular highlight dot (centre of lens)
+    const specMat = new THREE.MeshStandardMaterial({
+      color: 0x8888cc, roughness: 0.0, metalness: 0.0,
+      transparent: true, opacity: 0.28
+    });
+    const spec = new THREE.Mesh(new THREE.CircleGeometry(glassR * 0.35, 32), specMat);
+    spec.rotation.y = Math.PI;
+    spec.position.set(camCX + lx - 3, camCY + ly + 3, -PD / 2 - 18.2);
+    g.add(spec);
   });
 
-  // Flash
-  const flashMesh = new THREE.Mesh(new THREE.CircleGeometry(9, 24), flash);
-  flashMesh.rotation.y = Math.PI;
-  flashMesh.position.set(-18, hh - 140, -PD / 2 - 10);
+  // Flash — top-right corner of module
+  const flashMesh = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 9, 32), flash);
+  flashMesh.rotation.x = Math.PI / 2;
+  flashMesh.position.set(camCX + 48, camCY + 45, -PD / 2 - 12);
   g.add(flashMesh);
+  const flashInner = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 11, 32),
+    new THREE.MeshStandardMaterial({ color: 0xfff8dd, roughness: 0.10,
+      emissive: new THREE.Color(0xffe070), emissiveIntensity: 0.6 }));
+  flashInner.rotation.x = Math.PI / 2;
+  flashInner.position.set(camCX + 48, camCY + 45, -PD / 2 - 13);
+  g.add(flashInner);
 
-  // Microphone dot (between lenses, right of module)
-  const mic = new THREE.Mesh(new THREE.CircleGeometry(4, 16),
-    new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.8 }));
+  // Microphone pinhole — below flash
+  const micMat = new THREE.MeshStandardMaterial({ color: 0x505055, roughness: 0.8 });
+  const mic = new THREE.Mesh(new THREE.CircleGeometry(4.5, 16), micMat);
   mic.rotation.y = Math.PI;
-  mic.position.set(-22, hh - 140 - 30, -PD / 2 - 8.5);
+  mic.position.set(camCX + 48, camCY + 20, -PD / 2 - 10);
   g.add(mic);
 
   // ── Dynamic Island (front, top-centre pill) ───────────────────────────────
   const diMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5 });
-  const di = new THREE.Mesh(new THREE.ShapeGeometry(rrShape(126, 34, 17), 48), diMat);
-  di.position.set(0, SCREEN_Y + shh - 28, PD / 2 + 1.2);
+  const di = new THREE.Mesh(new THREE.ShapeGeometry(rrShape(130, 36, 18), 64), diMat);
+  di.position.set(0, SCREEN_Y + shh - 30, PD / 2 + 1.2);
   g.add(di);
 
-  // ── Lightning port (bottom centre) ───────────────────────────────────────
-  const lightningPort = new THREE.Mesh(new THREE.BoxGeometry(52, 16, PD + 2), port);
-  lightningPort.position.set(0, -hh, 0);
-  g.add(lightningPort);
+  // ── USB-C port (bottom centre) — narrower than Lightning ─────────────────
+  const usbcOuter = new THREE.Mesh(new THREE.BoxGeometry(34, 12, PD + 2), port);
+  usbcOuter.position.set(0, -hh, 0);
+  g.add(usbcOuter);
+
+  // USB-C inner connector detail
+  const usbcInner = new THREE.Mesh(new THREE.BoxGeometry(24, 7, PD + 4),
+    new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.5, metalness: 0.6 }));
+  usbcInner.position.set(0, -hh, 0);
+  g.add(usbcInner);
 
   // Speaker grilles (symmetric bottom)
   [-90, 90].forEach(x => {
@@ -174,14 +225,26 @@ function createPhone() {
     }
   });
 
-  // ── Power button (right side) ─────────────────────────────────────────────
-  const power = new THREE.Mesh(new THREE.BoxGeometry(6, 80, 12), frame);
-  power.position.set(hw + 3, 60, 0);
+  // ── Power button (right side, upper) ─────────────────────────────────────
+  const power = new THREE.Mesh(new THREE.BoxGeometry(6, 90, 13), frame);
+  power.position.set(hw + 3, 80, 0);
   g.add(power);
 
+  // ── Camera Control button (right side, lower — iPhone 16 exclusive) ───────
+  // Capsule-shaped button below the power button
+  const ccShape = rrShape(60, 13, 6);
+  const ccBtn = new THREE.Mesh(new THREE.ShapeGeometry(ccShape, 32),
+    new THREE.MeshStandardMaterial({ color: 0x3a3a3c, roughness: 0.15, metalness: 0.82 }));
+  ccBtn.rotation.y = Math.PI / 2;
+  // Extrude via a thin box + the shape for the side face
+  const ccBody = new THREE.Mesh(new THREE.BoxGeometry(7, 60, 13), frame);
+  ccBody.position.set(hw + 3, -80, 0);
+  g.add(ccBody);
+
   // ── Volume buttons (left side) ────────────────────────────────────────────
-  [[-90, 50], [30, 72], [130, 72]].forEach(([y, bh]) => {
-    const vol = new THREE.Mesh(new THREE.BoxGeometry(6, bh, 12), frame);
+  // Mute/silent switch (top), vol-up, vol-down
+  [[-110, 48], [10, 80], [110, 80]].forEach(([y, bh]) => {
+    const vol = new THREE.Mesh(new THREE.BoxGeometry(6, bh, 13), frame);
     vol.position.set(-hw - 3, y, 0);
     g.add(vol);
   });
@@ -198,20 +261,8 @@ function createScreenObject() {
     overflow: 'hidden', background: '#000',
     backfaceVisibility: 'hidden',
     WebkitBackfaceVisibility: 'hidden',
-    borderRadius: '6px',
+    borderRadius: '44px',   // matches iPhone 12 screen corner radius at 393px div width
   });
-
-  // Dynamic Island overlay (pill centred at top of iframe)
-  const notchEl = document.createElement('div');
-  Object.assign(notchEl.style, {
-    position: 'absolute', top: '11px', left: '50%',
-    transform: 'translateX(-50%)',
-    width: '126px', height: '34px',
-    background: '#000',
-    borderRadius: '17px',
-    zIndex: '5',
-  });
-  wrap.appendChild(notchEl);
 
   // Status bar tint
   const statusBar = document.createElement('div');
@@ -245,8 +296,8 @@ function setupUI(css3dEl, controls) {
   btn.textContent = '🖱  Interact with site';
   Object.assign(btn.style, {
     position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-    zIndex: '10', background: 'rgba(255,255,255,0.1)', color: '#fff',
-    border: '1px solid rgba(255,255,255,0.25)', borderRadius: '24px',
+    zIndex: '10', background: 'rgba(255,255,255,0.72)', color: '#1c1c1e',
+    border: '1px solid rgba(0,0,0,0.10)', borderRadius: '24px',
     padding: '10px 24px', fontSize: '13px', cursor: 'pointer',
     backdropFilter: 'blur(12px)', fontFamily: '-apple-system, sans-serif',
   });
@@ -262,11 +313,12 @@ function setupUI(css3dEl, controls) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') setMode(false); });
 }
 
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 function init() {
   try {
     status('Booting…');
-    document.body.style.background = '#ffffff';
+    document.body.style.background = '#f0f0f5';
 
     const camera = new THREE.PerspectiveCamera(
       45, window.innerWidth / window.innerHeight, 1, 10000
@@ -282,12 +334,13 @@ function init() {
       position: 'fixed', top: '0', left: '0', zIndex: '1', pointerEvents: 'none',
     });
     document.body.appendChild(css3dRenderer.domElement);
-    css3dScene.add(createScreenObject());
+    const screenObj = createScreenObject();
+    css3dScene.add(screenObj);
 
     // ── WebGL renderer (z-index 0, below) ───────────────────────────────
     status('Starting renderer…');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
+    scene.background = new THREE.Color(0xf0f0f5);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -297,40 +350,141 @@ function init() {
     });
     document.body.appendChild(renderer.domElement);
 
-    // ── Lighting ─────────────────────────────────────────────────────────
-    // Strong ambient so metallic objects are never pitch black
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    // ── Lighting — soft natural studio (matches Figma reference) ─────────
+    // Hemisphere: warm sky above, neutral ground below
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xe8e8f0, 1.0));
 
-    const key = new THREE.DirectionalLight(0xffffff, 3.5);
-    key.position.set(400, 700, 900);
+    // Key light — soft upper-right (main highlight on silver)
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(400, 600, 800);
     scene.add(key);
 
-    const rim = new THREE.DirectionalLight(0xffffff, 1.5);
-    rim.position.set(-600, 100, -500);
-    scene.add(rim);
-
-    const fill = new THREE.DirectionalLight(0xffffff, 0.8);
-    fill.position.set(0, -600, 400);
+    // Left fill — cool, very soft (opens up the shadow side)
+    const fill = new THREE.DirectionalLight(0xdde8ff, 0.7);
+    fill.position.set(-500, 100, 400);
     scene.add(fill);
 
-    // ── Phone ─────────────────────────────────────────────────────────────
-    scene.add(createPhone());
+    // Ground bounce — simulates light reflecting off white studio floor
+    const bounce = new THREE.DirectionalLight(0xffffff, 0.4);
+    bounce.position.set(0, -600, 300);
+    scene.add(bounce);
 
-    // ── Futuristic green axis rings ───────────────────────────────────────
-    const axisMat = new THREE.MeshBasicMaterial({
-      color: 0x00ff88, transparent: true, opacity: 0.28, side: THREE.DoubleSide,
+    // ── Procedural phone — shown as placeholder while GLB loads ──────────
+    const proceduralPhone = createPhone();
+    scene.add(proceduralPhone);
+
+    // ── Load hand + phone GLB ─────────────────────────────────────────────
+    const loader = new GLTFLoader();
+    loader.load('/i_phone12.glb', (gltf) => {
+      const model = gltf.scene;
+
+      // 1. Add at native scale, force matrix update before any Box3 calls.
+      scene.add(model);
+      model.updateMatrixWorld(true);
+
+      // 2. Scale so total model height = PH — predictable, camera-friendly.
+      const rawBox = new THREE.Box3().setFromObject(model);
+      const rawSize = new THREE.Vector3();
+      rawBox.getSize(rawSize);
+      model.scale.setScalar(PH / rawSize.y);
+      model.updateMatrixWorld(true);
+
+      // 3. Centre at world origin.
+      const scaledBox = new THREE.Box3().setFromObject(model);
+      const centre = new THREE.Vector3();
+      scaledBox.getCenter(centre);
+      model.position.set(-centre.x, -centre.y, -centre.z);
+      model.updateMatrixWorld(true);
+
+      // 4. Find the screen mesh — log all meshes so the name is visible in console.
+      const TARGET_ASPECT = SW / SH;          // ≈ 0.461
+      const meshInfo = [];
+      model.traverse(child => {
+        if (!child.isMesh) return;
+        const mb = new THREE.Box3().setFromObject(child);
+        const ms = new THREE.Vector3();
+        const mc = new THREE.Vector3();
+        mb.getSize(ms); mb.getCenter(mc);
+        const d = [ms.x, ms.y, ms.z].sort((a, b) => b - a); // desc
+        const faceAspect = d[1] / Math.max(d[0], 1e-9);
+        const flatness   = d[2] / Math.max(d[0], 1e-9);
+        console.log('[GLB]', `"${child.name}"`,
+          `w:${ms.x.toFixed(1)} h:${ms.y.toFixed(1)} d:${ms.z.toFixed(1)}`,
+          `face:${faceAspect.toFixed(3)} flat:${flatness.toFixed(3)}`,
+          `cz:${mc.z.toFixed(1)}`);
+        meshInfo.push({ mesh: child, size: ms, center: mc, dims: d, faceAspect, flatness });
+      });
+
+      // Pass A — explicit name match.
+      const namePatterns = ['screen', 'display', 'glass_front', 'front_glass', 'lcd', 'panel'];
+      let screenInfo = meshInfo.find(({ mesh }) =>
+        namePatterns.some(p => mesh.name.toLowerCase().includes(p))
+      );
+
+      // Pass B — flat portrait rect, nearest to iPhone aspect, most positive Z centre.
+      if (!screenInfo) {
+        const cands = meshInfo
+          .filter(({ faceAspect, flatness }) =>
+            faceAspect > 0.35 && faceAspect < 0.65 && flatness < 0.12
+          )
+          .sort((a, b) => {
+            const da = Math.abs(a.faceAspect - TARGET_ASPECT);
+            const db = Math.abs(b.faceAspect - TARGET_ASPECT);
+            // Among equally-close matches prefer frontmost Z (highest Z centre).
+            if (Math.abs(da - db) < 0.02) return b.center.z - a.center.z;
+            return da - db;
+          });
+        screenInfo = cands[0] ?? null;
+        if (screenInfo)
+          console.log('[GLB] screen by heuristic →', `"${screenInfo.mesh.name}"`);
+        else
+          console.warn('[GLB] no screen mesh — overlay stays at default position');
+      }
+
+      // 5. Pin CSS3D overlay to screen face.
+      //    IMPORTANT: do NOT copy worldQuat — that rotates the div to face the
+      //    wrong direction (down, back, etc).  The CSS3DObject must keep identity
+      //    rotation so it faces +Z toward the camera, same as a flat phone screen.
+      if (screenInfo) {
+        const sb = new THREE.Box3().setFromObject(screenInfo.mesh);
+        const sc = new THREE.Vector3(); sb.getCenter(sc);
+        const ss = new THREE.Vector3(); sb.getSize(ss);
+        console.log('[GLB] screen →',
+          `x:${sc.x.toFixed(1)} y:${sc.y.toFixed(1)} z:${sc.z.toFixed(1)}`,
+          `| ${ss.x.toFixed(1)} × ${ss.y.toFixed(1)}`);
+
+        screenObj.quaternion.identity();            // always face the camera (+Z)
+        screenObj.position.set(sc.x, sc.y, sc.z + 0.2); // flush against the glass
+        screenObj.scale.set(ss.x / SW, ss.y / SH, 1);
+
+        // Compute CSS border-radius so it matches the GLB model's physical corner.
+        // SCREEN_CORNER_R is in world units; divide by the scale factor to get CSS px.
+        const cssRadius = SCREEN_CORNER_R / (ss.x / SW);
+        screenObj.element.style.borderRadius = `${cssRadius.toFixed(1)}px`;
+      }
+
+      // 6. Hide procedural phone now that GLB is live.
+      proceduralPhone.visible = false;
+      status('Three.js WebGL — iPhone 12 (GLB)');
+    }, undefined, (err) => {
+      console.error('GLB load error:', err);
+      status('ERR: could not load i_phone12.glb');
     });
-    const R = 500, tube = 0.7;
+
+    // ── Subtle orbit rings — light gray to complement natural lighting ────
+    const axisMat = new THREE.MeshBasicMaterial({
+      color: 0xc0c8d8, transparent: true, opacity: 0.18, side: THREE.DoubleSide,
+    });
+    const R = 500, tube = 0.8;
     const yRing = new THREE.Mesh(new THREE.TorusGeometry(R, tube, 4, 160), axisMat);
     const xRing = new THREE.Mesh(new THREE.TorusGeometry(R, tube, 4, 160), axisMat);
     xRing.rotation.x = Math.PI / 2;
     const zRing = new THREE.Mesh(new THREE.TorusGeometry(R, tube, 4, 160), axisMat);
     zRing.rotation.y = Math.PI / 2;
-    // Tick marks — small bright segments at 90° intervals on each ring
-    const tickMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.7 });
+    const tickMat = new THREE.MeshBasicMaterial({ color: 0xa0aec0, transparent: true, opacity: 0.35 });
     [yRing, xRing, zRing].forEach(ring => {
       for (let i = 0; i < 4; i++) {
-        const tick = new THREE.Mesh(new THREE.TorusGeometry(R, tube * 2, 4, 12, 0.05), tickMat);
+        const tick = new THREE.Mesh(new THREE.TorusGeometry(R, tube * 2.5, 4, 12, 0.05), tickMat);
         tick.rotation.copy(ring.rotation);
         tick.rotation.y += (i * Math.PI) / 2;
         scene.add(tick);
@@ -369,7 +523,7 @@ function init() {
       css3dRenderer.setSize(w, h);
     });
 
-    status('Three.js WebGL — iPhone 15 Pro');
+    status('Three.js WebGL — iPhone 16');
 
     renderer.setAnimationLoop((time) => {
       const t = time * 0.00008;
