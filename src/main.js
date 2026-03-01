@@ -99,9 +99,10 @@ function createPhone() {
   g.add(appleDisc);
 
   const camCX = -58, camCY = hh - 160;
-  g.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(140, 148, 10),
-    new THREE.MeshStandardMaterial({ color: 0xd0d0d8, roughness: 0.08, metalness: 0.22 })),
-    { position: new THREE.Vector3(camCX, camCY, -PD / 2 - 5) }));
+  const camPad = new THREE.Mesh(new THREE.BoxGeometry(140, 148, 10),
+    new THREE.MeshStandardMaterial({ color: 0xd0d0d8, roughness: 0.08, metalness: 0.22 }));
+  camPad.position.set(camCX, camCY, -PD / 2 - 5);
+  g.add(camPad);
 
   [[-30, 32], [30, 32], [0, -28]].forEach(([lx, ly], idx) => {
     const outerR = idx === 2 ? 28 : 26, innerR = idx === 2 ? 22 : 20, glassR = idx === 2 ? 17 : 16;
