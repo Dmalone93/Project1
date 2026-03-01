@@ -11,21 +11,35 @@ const SITES = [
   'https://tiny-viral-56311712.figma.site',
 ];
 
-// iPhone dimensions (393×852 screen, scaled to PH)
-const PW  = 430;   // body width
-const PH  = 940;   // body height
-const PD  = 38;    // depth
-const PR  = 58;    // corner radius
+const PROTO_NAMES = ['Prototype 1', 'Prototype 2', 'Prototype 3'];
 
-// Screen
-const SW  = 393;   // screen width  (logical pts)
-const SH  = 852;   // screen height (logical pts)
+const INSIGHTS = [
+  'Initial reaction of delight when noticing the matching set feature in the quick add modal.',
+  'Users dislike upselling in the basket as it feels pushy — but serving products at the point of buying intent feels more organic.',
+  'Initially confused whether the single matching item was in their basket, but confidence grew when multiple products were shown in the container.',
+  'Feedback noted the add-to-cart felt too instant with no visual feedback — this has since been resolved.',
+  'Positive responses to the first modal screen — users liked seeing only relevant info, with the option to explore more on the product page.',
+  'Users praised the clean UI: size buttons were easy to tap and add to cart was intuitive.',
+  'Users effortlessly navigated back to the collection via the breadcrumb button on the product page.',
+  "When prompted to find a different colour, almost all users clicked '10 colors available' — they found it clear and obvious.",
+  'All users agreed that adding the matching set at this stage in their journey felt natural and delightful.',
+  'The "Continue Shopping" primary CTA was well received — users liked not being pushed to checkout and found it easy to return to the collection.',
+];
+
+// iPhone dimensions (393×852 screen, scaled to PH)
+const PW  = 430;
+const PH  = 940;
+const PD  = 38;
+const PR  = 58;
+
+const SW  = 393;
+const SH  = 852;
 const SCREEN_Y = -6;
-// Corner radius in world units — tune to match GLB model corners
 const SCREEN_CORNER_R = 65;
 
-const PHONE_SPACING = 850; // world units between phone centres
-const CAM_Z = 3000;        // pulled back to fit all 3 phones
+const PHONE_SPACING = 850;
+const CAM_Z     = 3000;  // overview camera Z
+const FOCUSED_Z = 1200;  // camera Z when zoomed in on a phone
 
 // ── Status helper ─────────────────────────────────────────────────────────────
 const infoEl = document.getElementById('info');
@@ -63,7 +77,6 @@ function createPhone() {
   const flash    = new THREE.MeshStandardMaterial({ color: 0xfffbe0, roughness: 0.20, emissive: new THREE.Color(0xffee88), emissiveIntensity: 0.4 });
   const port     = new THREE.MeshStandardMaterial({ color: 0x888890, roughness: 0.5, metalness: 0.6 });
 
-  // Front face with screen hole
   const frontShape = rrShape(PW, PH, PR);
   const screenHole = new THREE.Path();
   const sr = 6;
@@ -106,10 +119,8 @@ function createPhone() {
 
   [[-30, 32], [30, 32], [0, -28]].forEach(([lx, ly], idx) => {
     const outerR = idx === 2 ? 28 : 26, innerR = idx === 2 ? 22 : 20, glassR = idx === 2 ? 17 : 16;
-    [
-      [new THREE.CylinderGeometry(outerR, outerR, 10, 64), camMetal, -12],
-      [new THREE.CylinderGeometry(innerR, innerR, 12, 64), camLens, -12.5],
-    ].forEach(([geo, mat, dz]) => {
+    [[new THREE.CylinderGeometry(outerR, outerR, 10, 64), camMetal, -12],
+     [new THREE.CylinderGeometry(innerR, innerR, 12, 64), camLens, -12.5]].forEach(([geo, mat, dz]) => {
       const m = new THREE.Mesh(geo, mat);
       m.rotation.x = Math.PI / 2;
       m.position.set(camCX + lx, camCY + ly, -PD / 2 + dz);
@@ -235,8 +246,65 @@ function findScreenMesh(model) {
   return found;
 }
 
+// ── Notes panel ───────────────────────────────────────────────────────────────
+function createNotesPanel() {
+  const panel = document.createElement('div');
+  panel.style.position = 'fixed';
+  panel.style.left = '24px';
+  panel.style.top = '50%';
+  panel.style.transform = 'translateY(-50%) translateX(-120%)';
+  panel.style.transition = 'transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease';
+  panel.style.opacity = '0';
+  panel.style.pointerEvents = 'none';
+  panel.style.width = '300px';
+  panel.style.maxHeight = '82vh';
+  panel.style.overflowY = 'auto';
+  panel.style.background = 'rgba(255,255,255,0.93)';
+  panel.style.backdropFilter = 'blur(24px)';
+  panel.style.borderRadius = '20px';
+  panel.style.padding = '26px 22px 24px';
+  panel.style.boxShadow = '0 8px 40px rgba(0,0,0,0.13)';
+  panel.style.zIndex = '20';
+  panel.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';
+  panel.style.boxSizing = 'border-box';
+  document.body.appendChild(panel);
+  return panel;
+}
+
+function showPanel(panel, index, onClose) {
+  const insightsHTML = INSIGHTS.map(text =>
+    `<li style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;">
+       <span style="width:6px;height:6px;border-radius:50%;background:#646cff;margin-top:6px;flex-shrink:0;"></span>
+       <span style="font-size:13px;line-height:1.65;color:#3a3a3c;">${text}</span>
+     </li>`
+  ).join('');
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#999;text-transform:uppercase;margin-bottom:4px;">User Testing</div>
+        <div style="font-size:19px;font-weight:700;color:#1c1c1e;line-height:1.2;">${PROTO_NAMES[index]}</div>
+      </div>
+      <button id="panel-close" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,0.07);cursor:pointer;font-size:13px;color:#555;margin-top:2px;">✕</button>
+    </div>
+    <div style="height:1px;background:rgba(0,0,0,0.08);margin-bottom:14px;"></div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:#aaa;text-transform:uppercase;margin-bottom:10px;">Key Insights</div>
+    <ul style="margin:0;padding:0;list-style:none;">${insightsHTML}</ul>
+  `;
+  panel.querySelector('#panel-close').onclick = onClose;
+  panel.style.opacity = '1';
+  panel.style.transform = 'translateY(-50%) translateX(0)';
+  panel.style.pointerEvents = 'auto';
+}
+
+function hidePanel(panel) {
+  panel.style.opacity = '0';
+  panel.style.transform = 'translateY(-50%) translateX(-120%)';
+  panel.style.pointerEvents = 'none';
+}
+
 // ── UI toggle ─────────────────────────────────────────────────────────────────
-function setupUI(css3dEl, controls) {
+function setupUI(css3dEl, controls, onEscape) {
   let interactMode = false;
   const btn = document.createElement('button');
   btn.textContent = '🖱  Interact with site';
@@ -263,7 +331,9 @@ function setupUI(css3dEl, controls) {
     btn.textContent = on ? '↩  Back to orbit' : '🖱  Interact with site';
   }
   btn.addEventListener('click', () => setMode(!interactMode));
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') setMode(false); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { setMode(false); onEscape(); }
+  });
 }
 
 
@@ -290,7 +360,6 @@ function init() {
     css3dRenderer.domElement.style.pointerEvents = 'none';
     document.body.appendChild(css3dRenderer.domElement);
 
-    // One CSS3D overlay per prototype, spaced to match phone positions
     const phoneOffsets = [-PHONE_SPACING, 0, PHONE_SPACING];
     const screenObjs = SITES.map(url => {
       const obj = createScreenObject(url);
@@ -324,7 +393,7 @@ function init() {
     bounce.position.set(0, -600, 300);
     scene.add(bounce);
 
-    // ── Procedural phone placeholders (one per slot while GLB loads) ──────
+    // ── Procedural phone placeholders ────────────────────────────────────
     const proceduralPhones = phoneOffsets.map(x => {
       const p = createPhone();
       p.position.x = x;
@@ -332,10 +401,9 @@ function init() {
       return p;
     });
 
-    // ── Load GLB, clone once per phone slot ───────────────────────────────
+    // ── Load GLB ─────────────────────────────────────────────────────────
     const loader = new GLTFLoader();
     loader.load('/i_phone12.glb', (gltf) => {
-      // Compute scale factor once from the template
       const template = gltf.scene;
       template.updateMatrixWorld(true);
       const rawBox = new THREE.Box3().setFromObject(template);
@@ -344,28 +412,24 @@ function init() {
       const scaleFactor = PH / rawSize.y;
 
       phoneOffsets.forEach((offsetX, i) => {
-        // Independent clone per phone — shares geometry/materials, not transforms
         const model = template.clone(true);
         scene.add(model);
         model.scale.setScalar(scaleFactor);
         model.updateMatrixWorld(true);
 
-        // Centre clone at its X offset
         const scaledBox = new THREE.Box3().setFromObject(model);
         const centre = new THREE.Vector3();
         scaledBox.getCenter(centre);
         model.position.set(offsetX - centre.x, -centre.y, -centre.z);
         model.updateMatrixWorld(true);
 
-        // Pin CSS3D overlay to the detected screen face
         const screenInfo = findScreenMesh(model);
         if (screenInfo) {
           const sb = new THREE.Box3().setFromObject(screenInfo.mesh);
           const sc = new THREE.Vector3(); sb.getCenter(sc);
           const ss = new THREE.Vector3(); sb.getSize(ss);
-
           const screenObj = screenObjs[i];
-          screenObj.quaternion.identity();                    // must face +Z toward camera
+          screenObj.quaternion.identity();
           screenObj.position.set(sc.x, sc.y, sc.z + 0.2);
           screenObj.scale.set(ss.x / SW, ss.y / SH, 1);
           const cssRadius = SCREEN_CORNER_R / (ss.x / SW);
@@ -378,6 +442,77 @@ function init() {
     }, undefined, (err) => {
       console.error('GLB load error:', err);
       status('ERR: could not load GLTF model — check console');
+    });
+
+    // ── Invisible hit planes for click detection (one per phone) ─────────
+    const hitMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+    const hitPlanes = phoneOffsets.map(x => {
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(700, 1100), hitMat);
+      plane.position.set(x, 0, 60);
+      scene.add(plane);
+      return plane;
+    });
+
+    // ── Camera animation state ────────────────────────────────────────────
+    const camTarget  = new THREE.Vector3(0, 60, CAM_Z);
+    const lookTarget = new THREE.Vector3(0, 0, 0);
+    let isCamAnimating = false;
+    let focusedPhone = -1;
+
+    // ── Notes panel ───────────────────────────────────────────────────────
+    const notesPanel = createNotesPanel();
+
+    function unfocusPhone() {
+      if (focusedPhone === -1) return;
+      focusedPhone = -1;
+      camTarget.set(0, 60, CAM_Z);
+      lookTarget.set(0, 0, 0);
+      isCamAnimating = true;
+      controls.enabled = false;
+      hidePanel(notesPanel);
+    }
+
+    function focusPhone(index) {
+      if (focusedPhone === index) return;
+      focusedPhone = index;
+      const x = phoneOffsets[index];
+      camTarget.set(x, 60, FOCUSED_Z);
+      lookTarget.set(x, 0, 0);
+      isCamAnimating = true;
+      controls.enabled = false;
+      showPanel(notesPanel, index, unfocusPhone);
+    }
+
+    // ── Click → focus phone ───────────────────────────────────────────────
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let pointerDownX = 0, pointerDownY = 0;
+
+    renderer.domElement.addEventListener('pointerdown', e => {
+      pointerDownX = e.clientX;
+      pointerDownY = e.clientY;
+    });
+
+    renderer.domElement.addEventListener('click', e => {
+      // Ignore drags (moved more than 5px)
+      const dx = e.clientX - pointerDownX;
+      const dy = e.clientY - pointerDownY;
+      if (dx * dx + dy * dy > 25) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.set(
+        ((e.clientX - rect.left) / rect.width)  *  2 - 1,
+        ((e.clientY - rect.top)  / rect.height) * -2 + 1
+      );
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(hitPlanes);
+
+      if (hits.length > 0) {
+        const idx = hitPlanes.indexOf(hits[0].object);
+        if (idx >= 0) focusPhone(idx);
+      } else {
+        unfocusPhone();
+      }
     });
 
     // ── Orbit rings ───────────────────────────────────────────────────────
@@ -422,7 +557,7 @@ function init() {
     controls.target.set(0, 0, 0);
     controls.update();
 
-    setupUI(css3dRenderer.domElement, controls);
+    setupUI(css3dRenderer.domElement, controls, unfocusPhone);
 
     window.addEventListener('resize', () => {
       const w = window.innerWidth, h = window.innerHeight;
@@ -439,6 +574,23 @@ function init() {
       yRing.rotation.y = t;
       xRing.rotation.z = t * 0.65;
       zRing.rotation.x = t * 0.45;
+
+      // Smooth camera focus animation
+      if (isCamAnimating) {
+        camera.position.lerp(camTarget, 0.07);
+        controls.target.lerp(lookTarget, 0.07);
+        const settled =
+          camera.position.distanceTo(camTarget) < 1 &&
+          controls.target.distanceTo(lookTarget) < 1;
+        if (settled) {
+          camera.position.copy(camTarget);
+          controls.target.copy(lookTarget);
+          isCamAnimating = false;
+          controls.enabled = true;
+          controls.update();
+        }
+      }
+
       controls.update();
       css3dRenderer.render(css3dScene, camera);
       renderer.render(scene, camera);
