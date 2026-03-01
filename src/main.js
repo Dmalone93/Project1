@@ -303,6 +303,76 @@ function hidePanel(panel) {
   panel.style.pointerEvents = 'none';
 }
 
+// ── Phone nav controls ────────────────────────────────────────────────────────
+function createNavControls(onSelect) {
+  const nav = document.createElement('div');
+  nav.style.position = 'fixed';
+  nav.style.bottom = '80px';
+  nav.style.left = '50%';
+  nav.style.transform = 'translateX(-50%)';
+  nav.style.zIndex = '10';
+  nav.style.display = 'flex';
+  nav.style.alignItems = 'center';
+  nav.style.gap = '6px';
+  nav.style.background = 'rgba(255,255,255,0.72)';
+  nav.style.backdropFilter = 'blur(12px)';
+  nav.style.borderRadius = '28px';
+  nav.style.padding = '6px 10px';
+  nav.style.border = '1px solid rgba(0,0,0,0.08)';
+  nav.style.fontFamily = '-apple-system, sans-serif';
+
+  const prevBtn = document.createElement('button');
+  prevBtn.textContent = '←';
+  styleNavBtn(prevBtn, false);
+  prevBtn.onclick = () => onSelect('prev');
+  nav.appendChild(prevBtn);
+
+  const dotBtns = PROTO_NAMES.map((name, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = String(i + 1);
+    styleNavBtn(btn, false);
+    btn.title = name;
+    btn.onclick = () => onSelect(i);
+    nav.appendChild(btn);
+    return btn;
+  });
+
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = '→';
+  styleNavBtn(nextBtn, false);
+  nextBtn.onclick = () => onSelect('next');
+  nav.appendChild(nextBtn);
+
+  document.body.appendChild(nav);
+
+  function update(activeIndex) {
+    dotBtns.forEach((btn, i) => {
+      const active = i === activeIndex;
+      btn.style.background = active ? '#646cff' : 'transparent';
+      btn.style.color = active ? '#fff' : '#1c1c1e';
+      btn.style.fontWeight = active ? '700' : '500';
+    });
+  }
+
+  return { el: nav, update };
+}
+
+function styleNavBtn(btn, active) {
+  btn.style.width = '32px';
+  btn.style.height = '32px';
+  btn.style.borderRadius = '50%';
+  btn.style.border = 'none';
+  btn.style.background = 'transparent';
+  btn.style.color = '#1c1c1e';
+  btn.style.fontSize = '14px';
+  btn.style.fontWeight = '500';
+  btn.style.cursor = 'pointer';
+  btn.style.display = 'flex';
+  btn.style.alignItems = 'center';
+  btn.style.justifyContent = 'center';
+  btn.style.transition = 'background 0.2s, color 0.2s';
+}
+
 // ── UI toggle ─────────────────────────────────────────────────────────────────
 function setupUI(css3dEl, controls, onEscape) {
   let interactMode = false;
@@ -445,7 +515,8 @@ function init() {
     });
 
     // ── Invisible hit planes for click detection (one per phone) ─────────
-    const hitMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+    // FrontSide only — clicking the back of the phone does nothing
+    const hitMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.FrontSide });
     const hitPlanes = phoneOffsets.map(x => {
       const plane = new THREE.Mesh(new THREE.PlaneGeometry(700, 1100), hitMat);
       plane.position.set(x, 0, 60);
@@ -459,8 +530,17 @@ function init() {
     let isCamAnimating = false;
     let focusedPhone = -1;
 
-    // ── Notes panel ───────────────────────────────────────────────────────
+    // ── Notes panel + nav controls ────────────────────────────────────────
     const notesPanel = createNotesPanel();
+    const nav = createNavControls((target) => {
+      if (target === 'prev') {
+        focusPhone(focusedPhone <= 0 ? phoneOffsets.length - 1 : focusedPhone - 1);
+      } else if (target === 'next') {
+        focusPhone(focusedPhone < 0 ? 0 : (focusedPhone + 1) % phoneOffsets.length);
+      } else {
+        focusPhone(target);
+      }
+    });
 
     function unfocusPhone() {
       if (focusedPhone === -1) return;
@@ -470,6 +550,7 @@ function init() {
       isCamAnimating = true;
       controls.enabled = false;
       hidePanel(notesPanel);
+      nav.update(-1);
     }
 
     function focusPhone(index) {
@@ -481,6 +562,7 @@ function init() {
       isCamAnimating = true;
       controls.enabled = false;
       showPanel(notesPanel, index, unfocusPhone);
+      nav.update(index);
     }
 
     // ── Click → focus phone ───────────────────────────────────────────────
