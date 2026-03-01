@@ -69,7 +69,7 @@ function createPhone() {
   const shw = SW / 2, shh = SH / 2;
 
   const frame    = new THREE.MeshStandardMaterial({ color: 0xd8d8dc, roughness: 0.14, metalness: 0.80 });
-  const glassBack= new THREE.MeshStandardMaterial({ color: 0xf0f0f5, roughness: 0.05, metalness: 0.12 });
+  const glassBack= new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: 0.06, metalness: 0.15 });
   const frontGlass=new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.04, metalness: 0.10 });
   const camMetal = new THREE.MeshStandardMaterial({ color: 0xb8b8be, roughness: 0.08, metalness: 0.96 });
   const camLens  = new THREE.MeshStandardMaterial({ color: 0x010103, roughness: 0.03, metalness: 0.05 });
@@ -106,14 +106,14 @@ function createPhone() {
   g.add(backFace);
 
   const appleDisc = new THREE.Mesh(new THREE.CircleGeometry(38, 64),
-    new THREE.MeshStandardMaterial({ color: 0xc8c8d0, roughness: 0.10, metalness: 0.85, transparent: true, opacity: 0.75 }));
+    new THREE.MeshStandardMaterial({ color: 0x48484a, roughness: 0.10, metalness: 0.85, transparent: true, opacity: 0.75 }));
   appleDisc.rotation.y = Math.PI;
   appleDisc.position.set(0, 60, -PD / 2 - 0.6);
   g.add(appleDisc);
 
   const camCX = -58, camCY = hh - 160;
   const camPad = new THREE.Mesh(new THREE.BoxGeometry(140, 148, 10),
-    new THREE.MeshStandardMaterial({ color: 0xd0d0d8, roughness: 0.08, metalness: 0.22 }));
+    new THREE.MeshStandardMaterial({ color: 0x2c2c2e, roughness: 0.08, metalness: 0.35 }));
   camPad.position.set(camCX, camCY, -PD / 2 - 5);
   g.add(camPad);
 
