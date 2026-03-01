@@ -392,6 +392,8 @@ function styleNavBtn(btn, active) {
   btn.style.color = '#1c1c1e';
   btn.style.fontSize = '14px';
   btn.style.fontWeight = '500';
+  btn.style.lineHeight = '1';
+  btn.style.padding = '0';
   btn.style.cursor = 'pointer';
   btn.style.display = 'flex';
   btn.style.alignItems = 'center';
