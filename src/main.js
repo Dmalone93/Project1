@@ -1,7 +1,7 @@
 // @ts-nocheck
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+import { CSS3DRenderer, CSS3DObject, CSS3DSprite } from 'three/addons/renderers/CSS3DRenderer.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -373,6 +373,25 @@ function styleNavBtn(btn, active) {
   btn.style.transition = 'background 0.2s, color 0.2s';
 }
 
+// ── Phone title label (CSS3DSprite — always faces camera) ─────────────────────
+function createPhoneLabel(name) {
+  const div = document.createElement('div');
+  div.textContent = name;
+  div.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';
+  div.style.fontSize = '72px';
+  div.style.fontWeight = '700';
+  div.style.color = '#1c1c1e';
+  div.style.letterSpacing = '-0.02em';
+  div.style.background = 'rgba(255,255,255,0.82)';
+  div.style.backdropFilter = 'blur(16px)';
+  div.style.borderRadius = '20px';
+  div.style.padding = '12px 28px';
+  div.style.border = '1px solid rgba(0,0,0,0.07)';
+  div.style.whiteSpace = 'nowrap';
+  div.style.boxShadow = '0 4px 24px rgba(0,0,0,0.08)';
+  return new CSS3DSprite(div);
+}
+
 // ── UI toggle ─────────────────────────────────────────────────────────────────
 function setupUI(css3dEl, controls, onEscape) {
   let interactMode = false;
@@ -435,6 +454,14 @@ function init() {
       const obj = createScreenObject(url);
       css3dScene.add(obj);
       return obj;
+    });
+
+    // ── Phone title labels ───────────────────────────────────────────────
+    const labelY = PH / 2 + 100; // just above the top of each phone
+    PROTO_NAMES.forEach((name, i) => {
+      const label = createPhoneLabel(name);
+      label.position.set(phoneOffsets[i], labelY, 0);
+      css3dScene.add(label);
     });
 
     // ── WebGL renderer ───────────────────────────────────────────────────
