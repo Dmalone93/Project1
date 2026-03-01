@@ -163,31 +163,34 @@ function createPhone() {
 // ── Live website iframe (CSS3DObject) ─────────────────────────────────────────
 function createScreenObject(url) {
   const wrap = document.createElement('div');
-  Object.assign(wrap.style, {
-    position: 'relative',
-    width: `${SW}px`, height: `${SH}px`,
-    overflow: 'hidden', background: '#000',
-    backfaceVisibility: 'hidden',
-    WebkitBackfaceVisibility: 'hidden',
-    borderRadius: '44px',
-  });
+  wrap.style.position = 'relative';
+  wrap.style.width = `${SW}px`;
+  wrap.style.height = `${SH}px`;
+  wrap.style.overflow = 'hidden';
+  wrap.style.background = '#000';
+  wrap.style.backfaceVisibility = 'hidden';
+  wrap.style.webkitBackfaceVisibility = 'hidden';
+  wrap.style.borderRadius = '44px';
 
   const statusBar = document.createElement('div');
-  Object.assign(statusBar.style, {
-    position: 'absolute', top: '0', left: '0', right: '0',
-    height: '44px', zIndex: '4',
-    background: 'linear-gradient(rgba(0,0,0,0.35), transparent)',
-    pointerEvents: 'none',
-  });
+  statusBar.style.position = 'absolute';
+  statusBar.style.top = '0';
+  statusBar.style.left = '0';
+  statusBar.style.right = '0';
+  statusBar.style.height = '44px';
+  statusBar.style.zIndex = '4';
+  statusBar.style.background = 'linear-gradient(rgba(0,0,0,0.35), transparent)';
+  statusBar.style.pointerEvents = 'none';
   wrap.appendChild(statusBar);
 
   const iframe = document.createElement('iframe');
   iframe.src = url;
-  Object.assign(iframe.style, {
-    position: 'absolute', inset: '0',
-    width: '100%', height: '100%',
-    border: 'none', display: 'block',
-  });
+  iframe.style.position = 'absolute';
+  iframe.style.inset = '0';
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.border = 'none';
+  iframe.style.display = 'block';
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
   wrap.appendChild(iframe);
 
@@ -236,13 +239,20 @@ function setupUI(css3dEl, controls) {
   let interactMode = false;
   const btn = document.createElement('button');
   btn.textContent = '🖱  Interact with site';
-  Object.assign(btn.style, {
-    position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-    zIndex: '10', background: 'rgba(255,255,255,0.72)', color: '#1c1c1e',
-    border: '1px solid rgba(0,0,0,0.10)', borderRadius: '24px',
-    padding: '10px 24px', fontSize: '13px', cursor: 'pointer',
-    backdropFilter: 'blur(12px)', fontFamily: '-apple-system, sans-serif',
-  });
+  btn.style.position = 'fixed';
+  btn.style.bottom = '24px';
+  btn.style.left = '50%';
+  btn.style.transform = 'translateX(-50%)';
+  btn.style.zIndex = '10';
+  btn.style.background = 'rgba(255,255,255,0.72)';
+  btn.style.color = '#1c1c1e';
+  btn.style.border = '1px solid rgba(0,0,0,0.10)';
+  btn.style.borderRadius = '24px';
+  btn.style.padding = '10px 24px';
+  btn.style.fontSize = '13px';
+  btn.style.cursor = 'pointer';
+  btn.style.backdropFilter = 'blur(12px)';
+  btn.style.fontFamily = '-apple-system, sans-serif';
   document.body.appendChild(btn);
 
   function setMode(on) {
@@ -272,9 +282,11 @@ function init() {
     const css3dScene = new THREE.Scene();
     const css3dRenderer = new CSS3DRenderer();
     css3dRenderer.setSize(window.innerWidth, window.innerHeight);
-    Object.assign(css3dRenderer.domElement.style, {
-      position: 'fixed', top: '0', left: '0', zIndex: '1', pointerEvents: 'none',
-    });
+    css3dRenderer.domElement.style.position = 'fixed';
+    css3dRenderer.domElement.style.top = '0';
+    css3dRenderer.domElement.style.left = '0';
+    css3dRenderer.domElement.style.zIndex = '1';
+    css3dRenderer.domElement.style.pointerEvents = 'none';
     document.body.appendChild(css3dRenderer.domElement);
 
     // One CSS3D overlay per prototype, spaced to match phone positions
@@ -293,9 +305,10 @@ function init() {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
-    Object.assign(renderer.domElement.style, {
-      position: 'fixed', top: '0', left: '0', zIndex: '0',
-    });
+    renderer.domElement.style.position = 'fixed';
+    renderer.domElement.style.top = '0';
+    renderer.domElement.style.left = '0';
+    renderer.domElement.style.zIndex = '0';
     document.body.appendChild(renderer.domElement);
 
     // ── Lighting ─────────────────────────────────────────────────────────
