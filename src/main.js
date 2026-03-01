@@ -261,24 +261,19 @@ function findScreenMesh(model) {
 }
 
 // ── Notes panel ───────────────────────────────────────────────────────────────
+function isMobile() { return window.innerWidth < 768; }
+
 function createNotesPanel() {
   const panel = document.createElement('div');
   panel.style.position = 'fixed';
-  panel.style.left = '24px';
-  panel.style.top = '50%';
-  panel.style.transform = 'translateY(-50%) translateX(-120%)';
-  panel.style.transition = 'transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease';
+  panel.style.transition = 'transform 0.42s cubic-bezier(0.34,1.56,0.64,1), opacity 0.32s ease';
   panel.style.opacity = '0';
   panel.style.pointerEvents = 'none';
-  panel.style.width = '300px';
-  panel.style.maxHeight = '82vh';
   panel.style.overflowY = 'auto';
-  panel.style.background = 'rgba(255,255,255,0.93)';
+  panel.style.background = 'rgba(255,255,255,0.96)';
   panel.style.backdropFilter = 'blur(24px)';
-  panel.style.borderRadius = '20px';
-  panel.style.padding = '26px 22px 24px';
   panel.style.boxShadow = '0 8px 40px rgba(0,0,0,0.13)';
-  panel.style.zIndex = '20';
+  panel.style.zIndex = '30';
   panel.style.fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif';
   panel.style.boxSizing = 'border-box';
   document.body.appendChild(panel);
@@ -307,14 +302,31 @@ function showPanel(panel, index, onClose) {
   `;
   panel.querySelector('#panel-close').onclick = onClose;
   panel.style.opacity = '1';
-  panel.style.transform = 'translateY(-50%) translateX(0)';
   panel.style.pointerEvents = 'auto';
+  if (isMobile()) {
+    // Full-screen sheet slides up from the bottom
+    panel.style.left = '0'; panel.style.right = '0';
+    panel.style.top = '0'; panel.style.bottom = '0';
+    panel.style.width = '100%'; panel.style.maxHeight = '100%';
+    panel.style.borderRadius = '0';
+    panel.style.padding = '48px 24px 32px';
+    panel.style.transform = 'translateY(0)';
+  } else {
+    panel.style.left = '24px'; panel.style.right = '';
+    panel.style.top = '50%'; panel.style.bottom = '';
+    panel.style.width = '300px'; panel.style.maxHeight = '82vh';
+    panel.style.borderRadius = '20px';
+    panel.style.padding = '26px 22px 24px';
+    panel.style.transform = 'translateY(-50%) translateX(0)';
+  }
 }
 
 function hidePanel(panel) {
   panel.style.opacity = '0';
-  panel.style.transform = 'translateY(-50%) translateX(-120%)';
   panel.style.pointerEvents = 'none';
+  panel.style.transform = isMobile()
+    ? 'translateY(100%)'
+    : 'translateY(-50%) translateX(-120%)';
 }
 
 // ── Phone nav controls ────────────────────────────────────────────────────────
@@ -602,6 +614,31 @@ function init() {
 
     // ── Notes panel + nav controls ────────────────────────────────────────
     const notesPanel = createNotesPanel();
+    hidePanel(notesPanel); // sets correct initial hidden transform for current device
+
+    // Mobile "View Notes" button — replaces the auto-show side panel on small screens
+    const viewNotesBtn = document.createElement('button');
+    viewNotesBtn.textContent = 'View Notes';
+    viewNotesBtn.style.position = 'fixed';
+    viewNotesBtn.style.top = '20px';
+    viewNotesBtn.style.right = '20px';
+    viewNotesBtn.style.zIndex = '15';
+    viewNotesBtn.style.display = 'none';
+    viewNotesBtn.style.background = 'rgba(255,255,255,0.88)';
+    viewNotesBtn.style.backdropFilter = 'blur(12px)';
+    viewNotesBtn.style.border = '1px solid rgba(0,0,0,0.10)';
+    viewNotesBtn.style.borderRadius = '20px';
+    viewNotesBtn.style.padding = '9px 18px';
+    viewNotesBtn.style.fontSize = '14px';
+    viewNotesBtn.style.fontWeight = '600';
+    viewNotesBtn.style.fontFamily = '-apple-system, sans-serif';
+    viewNotesBtn.style.cursor = 'pointer';
+    viewNotesBtn.style.color = '#1c1c1e';
+    viewNotesBtn.onclick = () => {
+      if (focusedPhone >= 0) showPanel(notesPanel, focusedPhone, () => hidePanel(notesPanel));
+    };
+    document.body.appendChild(viewNotesBtn);
+
     const nav = createNavControls((target) => {
       if (target === 'prev') {
         focusPhone(focusedPhone <= 0 ? phoneOffsets.length - 1 : focusedPhone - 1);
@@ -620,6 +657,7 @@ function init() {
       isCamAnimating = true;
       controls.enabled = false;
       hidePanel(notesPanel);
+      viewNotesBtn.style.display = 'none';
       nav.update(-1);
     }
 
@@ -631,7 +669,13 @@ function init() {
       lookTarget.set(x, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
-      showPanel(notesPanel, index, unfocusPhone);
+      if (isMobile()) {
+        // On mobile: hide any open panel and show the "View Notes" button instead
+        hidePanel(notesPanel);
+        viewNotesBtn.style.display = 'block';
+      } else {
+        showPanel(notesPanel, index, unfocusPhone);
+      }
       nav.update(index);
     }
 
