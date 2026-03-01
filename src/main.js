@@ -649,6 +649,24 @@ function init() {
       }
     });
 
+    // On mobile: move nav + viewNotesBtn into a shared flex row at top-right
+    if (isMobile()) {
+      const mobileCtrl = document.createElement('div');
+      mobileCtrl.style.cssText = 'position:fixed;top:20px;right:20px;display:flex;align-items:center;gap:8px;z-index:15;';
+      document.body.appendChild(mobileCtrl);
+      nav.el.remove();
+      nav.el.style.position = 'static';
+      nav.el.style.bottom = '';
+      nav.el.style.left = '';
+      nav.el.style.transform = '';
+      mobileCtrl.appendChild(nav.el);
+      viewNotesBtn.remove();
+      viewNotesBtn.style.position = 'static';
+      viewNotesBtn.style.top = '';
+      viewNotesBtn.style.right = '';
+      mobileCtrl.appendChild(viewNotesBtn);
+    }
+
     function unfocusPhone() {
       if (focusedPhone === -1) return;
       focusedPhone = -1;
