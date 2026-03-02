@@ -48,7 +48,16 @@ const INSIGHTS = [
   ],
   // Quick Add
   [
-    'User testing notes coming soon.',
+    'All users had an initial reaction of delight when noticing the matching set feature in the quick add modal.',
+    'Users dislike upselling in the basket as it feels pushy — but serving products at the point of buying intent feels more organic.',
+    'Users were initially confused whether the single matching item was in their basket, but confidence grew when multiple products were shown in the container.',
+    'Feedback noted the add-to-cart felt too instant with no visual feedback — this has since been rectified.',
+    'Positive responses to the first modal screen — users liked seeing only relevant info, with the option to explore more on the product page.',
+    'Users praised the clean UI: size buttons were easy to tap and add to cart was intuitive.',
+    'Users very easily navigated back to the collection via the breadcrumb button on the product page.',
+    "When prompted to find a different colour, almost all users clicked '10 colors available' — they found it apparent and clear what the link would do.",
+    'All users agreed that adding the matching set at this point in their journey felt natural and delightful.',
+    'Users liked the "Continue Shopping" primary CTA — they dislike being pushed to checkout and appreciated having the option to return to the collection easily.',
   ],
 ];
 
