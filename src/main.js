@@ -30,11 +30,11 @@ const INSIGHTS = [
   ],
   // Prototype 2
   [
-    'Initial reaction of delight when noticing the matching set feature in the quick add modal.',
-    'Users dislike upselling in the basket as it feels pushy — but serving products at the point of buying intent feels more organic.',
-    'Initially confused whether the single matching item was in their basket, but confidence grew when multiple products were shown in the container.',
-    'Feedback noted the add-to-cart felt too instant with no visual feedback — this has since been resolved.',
-    'Positive responses to the first modal screen — users liked seeing only relevant info, with the option to explore more on the product page.',
+    'All users navigated back to the collection page via the breadcrumb bar.',
+    'Feature labels at the top of the collection were seen as useful and unobtrusive.',
+    'One user flagged the product type images as too large, consuming unnecessary space.',
+    'Colour filters were a standout — users bypassed product type images entirely and went straight to colour to find what they needed.',
+    'The combination of 3-column grid + colour filtering proved an effective way to quickly scan the full catalogue.',
   ],
   // Prototype 3
   [
