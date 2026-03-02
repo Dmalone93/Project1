@@ -33,7 +33,7 @@ const INSIGHTS = [
     ['',  'The user prefers a grid layout that she can change to allows her to scan a large amount of information quickly. She keeps her emails zoomed out to maximize visibility, which reflects her preference for seeing more content at once.'],
     ['+', 'Including a clear collection summary (e.g., highlighting key features like low-waist, sculpting, seamless, etc.) on the collection page is highly valuable and improves the browsing experience.'],
     ['-', 'Using DFYNE\'s true product colors instead of generic Shopify colors would create a more cohesive and premium brand feel.'],
-    ['-', 'Across the board, users showed a clear preference for smaller filter thumbnails, as they make the interface feel cleaner and easier to navigate.'],
+    ['+', 'Across the board, users showed a clear preference for smaller filter thumbnails, as they make the interface feel cleaner and easier to navigate.'],
   ],
   // Prototype 2
   [
