@@ -425,6 +425,42 @@ function createPhoneLabel(name) {
   return new CSS3DSprite(div);
 }
 
+// Canvas-texture plane for sticky note text — renders in WebGL so depth
+// testing works correctly.  rotation.y=Math.PI makes it face the back-viewer;
+// flipping repeat.x corrects the horizontal mirror that rotation causes.
+function makeStickyLabel(text) {
+  const W = 512, H = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#3a2d00';
+  ctx.font = 'bold 38px Arial, Helvetica, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  // Simple word-wrap
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > W - 60 && line) { lines.push(line); line = word; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  const lh = 52;
+  const totalH = lines.length * lh;
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, H / 2 - totalH / 2 + i * lh + lh / 2));
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.repeat.x = -1;   // flip horizontally — corrects mirror from rotation.y=Math.PI
+  tex.offset.x = 1;
+  return new THREE.Mesh(
+    new THREE.PlaneGeometry(280, 140),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+  );
+}
+
 // ── UI toggle ─────────────────────────────────────────────────────────────────
 function setupUI(css3dEl, controls, onEscape) {
   let interactMode = false;
@@ -604,27 +640,18 @@ function init() {
       status('ERR: could not load GLTF model — check console');
     });
 
-    // ── Sticky note GLB + text overlays on the back of each phone ────────
-    // CSS3DObject with rotation.y = Math.PI faces backwards; scaleX(-1) on the
-    // inner div un-mirrors the text so it reads correctly when viewed from behind.
+    // ── Sticky note GLB + canvas text on the back of each phone ──────────
+    // The phone back face sits at approx z ≈ -24 (phone centred at z=0, ~47u deep).
+    // GLB at z=-35 and text at z=-38 are *in front* of that from the back camera
+    // (back camera is at -Z; more-negative Z = closer to it = renders on top).
+    // rotation.y=Math.PI makes each element's front face point toward the back-viewer.
+
+    // Canvas text labels (WebGL depth-tested — no CSS3D bleed-through)
     STICKY_TEXTS.forEach((text, i) => {
-      const inner = document.createElement('div');
-      inner.textContent = text;
-      inner.style.width = '220px';
-      inner.style.fontFamily = "-apple-system, 'Segoe UI', sans-serif";
-      inner.style.fontSize = '18px';
-      inner.style.fontWeight = '600';
-      inner.style.lineHeight = '1.45';
-      inner.style.color = '#3d3000';
-      inner.style.textAlign = 'center';
-      inner.style.pointerEvents = 'none';
-      inner.style.transform = 'scaleX(-1)'; // cancel mirror from rotation.y = π
-      const wrapper = document.createElement('div');
-      wrapper.appendChild(inner);
-      const obj = new CSS3DObject(wrapper);
-      obj.position.set(phoneOffsets[i], 60, -22);
-      obj.rotation.y = Math.PI;
-      css3dScene.add(obj);
+      const label = makeStickyLabel(text);
+      label.position.set(phoneOffsets[i], 60, -38);
+      label.rotation.y = Math.PI;
+      scene.add(label);
     });
 
     const stickyLoader = new GLTFLoader();
@@ -638,8 +665,8 @@ function init() {
       phoneOffsets.forEach((x, i) => {
         const sticky = template.clone(true);
         sticky.scale.setScalar(stickyScale);
-        sticky.rotation.y = Math.PI; // face toward back-viewer
-        sticky.position.set(x, 60, -20);
+        sticky.rotation.y = Math.PI; // front face of note faces back-viewer
+        sticky.position.set(x, 60, -35);
         scene.add(sticky);
       });
     }, undefined, err => console.warn('Sticky note GLB load failed:', err));
