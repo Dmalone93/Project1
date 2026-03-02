@@ -468,37 +468,9 @@ function makeStickyLabel(text) {
   );
 }
 
-// ── UI toggle ─────────────────────────────────────────────────────────────────
-function setupUI(css3dEl, controls, onEscape) {
-  let interactMode = false;
-  const btn = document.createElement('button');
-  btn.textContent = '🖱  Interact with site';
-  btn.style.position = 'fixed';
-  btn.style.bottom = '24px';
-  btn.style.left = '50%';
-  btn.style.transform = 'translateX(-50%)';
-  btn.style.zIndex = '10';
-  btn.style.background = 'rgba(255,255,255,0.72)';
-  btn.style.color = '#1c1c1e';
-  btn.style.border = '1px solid rgba(0,0,0,0.10)';
-  btn.style.borderRadius = '24px';
-  btn.style.padding = '10px 24px';
-  btn.style.fontSize = '13px';
-  btn.style.cursor = 'pointer';
-  btn.style.backdropFilter = 'blur(12px)';
-  btn.style.fontFamily = '-apple-system, sans-serif';
-  document.body.appendChild(btn);
-
-  function setMode(on) {
-    interactMode = on;
-    css3dEl.style.pointerEvents = on ? 'all' : 'none';
-    controls.enabled = !on;
-    btn.textContent = on ? '↩  Back to orbit' : '🖱  Interact with site';
-  }
-  btn.addEventListener('click', () => setMode(!interactMode));
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { setMode(false); onEscape(); }
-  });
+// ── Escape key ────────────────────────────────────────────────────────────────
+function setupEscapeKey(onEscape) {
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') onEscape(); });
 }
 
 
@@ -771,6 +743,7 @@ function init() {
       lookTarget.set(0, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
+      css3dRenderer.domElement.style.pointerEvents = 'none'; // restore orbit
       hidePanel(notesPanel);
       viewNotesBtn.style.display = 'none';
       nav.update(-1);
@@ -784,6 +757,7 @@ function init() {
       lookTarget.set(x, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
+      css3dRenderer.domElement.style.pointerEvents = 'all'; // enable iframe interaction
       if (isMobile()) {
         // On mobile: hide any open panel and show the "View Notes" button instead
         hidePanel(notesPanel);
@@ -868,7 +842,7 @@ function init() {
     controls.target.set(0, 0, 0);
     controls.update();
 
-    setupUI(css3dRenderer.domElement, controls, unfocusPhone);
+    setupEscapeKey(unfocusPhone);
 
     window.addEventListener('resize', () => {
       const w = window.innerWidth, h = window.innerHeight;
