@@ -14,12 +14,6 @@ const SITES = [
 
 const PROTO_NAMES = ['Collection with Small Product Type Images', 'Collection with Colour Filter', 'Collection with Tabs', 'Quick Add with Matching Set feature'];
 
-const STICKY_TEXTS = [
-  'Collection with smaller product type images',
-  'Collection with colour filter type',
-  'Collection with tabs for filters',
-  'Quick Add to Cart',
-];
 
 // Each insight is [sentiment, text] where sentiment is '+' (positive), '-' (negative), or '' (neutral).
 const INSIGHTS = [
@@ -42,6 +36,8 @@ const INSIGHTS = [
     ['-', 'One user flagged the product type images as too large, consuming unnecessary space.'],
     ['+', 'Colour filters were a standout — users bypassed product type images entirely and went straight to colour to find what they needed.'],
     ['+', 'The combination of 3-column grid + colour filtering proved an effective way to quickly scan the full catalogue.'],
+    ['-', 'Some users did find the colors to be a distraction from the product type'],
+    ['-', 'Using DFYNE’s true product colors instead of generic Shopify colors would create a more cohesive and premium brand feel.'],
   ],
   // Prototype 3
   [
@@ -450,42 +446,6 @@ function createPhoneLabel(name) {
   return new CSS3DSprite(div);
 }
 
-// Canvas-texture plane for sticky note text — renders in WebGL so depth
-// testing works correct.  rotation.y=Math.PI makes the plane face the
-// back-viewer but mirrors the texture; we pre-mirror the canvas drawing so
-// the two mirrors cancel and text reads correctly from behind.
-function makeStickyLabel(text) {
-  const W = 512, H = 256;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  // Pre-mirror horizontally so rotation.y=Math.PI cancels it back to readable
-  ctx.save();
-  ctx.scale(-1, 1);
-  ctx.translate(-W, 0);
-  ctx.fillStyle = '#3a2d00';
-  ctx.font = 'bold 38px Arial, Helvetica, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const words = text.split(' ');
-  const lines = [];
-  let line = '';
-  for (const word of words) {
-    const test = line ? line + ' ' + word : word;
-    if (ctx.measureText(test).width > W - 60 && line) { lines.push(line); line = word; }
-    else line = test;
-  }
-  if (line) lines.push(line);
-  const lh = 52;
-  const totalH = lines.length * lh;
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, H / 2 - totalH / 2 + i * lh + lh / 2));
-  ctx.restore();
-  const tex = new THREE.CanvasTexture(canvas);
-  return new THREE.Mesh(
-    new THREE.PlaneGeometry(280, 140),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true })
-  );
-}
 
 // ── Escape key ────────────────────────────────────────────────────────────────
 function setupEscapeKey(onEscape) {
@@ -675,46 +635,6 @@ function init() {
       console.error('GLB load error:', err);
       status('ERR: could not load GLTF model — check console');
     });
-
-    // ── Sticky note GLB + canvas text on the back of each phone ──────────
-    // The phone back face sits at approx z ≈ -24 (phone centred at z=0, ~47u deep).
-    // GLB at z=-35 and text at z=-38 are *in front* of that from the back camera
-    // (back camera is at -Z; more-negative Z = closer to it = renders on top).
-    // rotation.y=Math.PI makes each element's front face point toward the back-viewer.
-
-    // Canvas text labels (WebGL depth-tested — no CSS3D bleed-through)
-    STICKY_TEXTS.forEach((text, i) => {
-      const label = makeStickyLabel(text);
-      label.position.set(phoneOffsets[i], 60, -38);
-      label.rotation.y = Math.PI;
-      scene.add(label);
-    });
-
-    const stickyLoader = new GLTFLoader();
-    stickyLoader.load('/outthere_sticky_note.glb', (stickyGltf) => {
-      const template = stickyGltf.scene;
-      // Force all materials double-sided so the note is visible regardless of
-      // which direction the GLB faces in its local coordinate system.
-      template.traverse(child => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m => { m.side = THREE.DoubleSide; m.needsUpdate = true; });
-      });
-      template.updateMatrixWorld(true);
-      const sb = new THREE.Box3().setFromObject(template);
-      const ss = new THREE.Vector3();
-      sb.getSize(ss);
-      // Guard against a degenerate bounding box (empty scene, tiny geometry, etc.)
-      const maxDim = Math.max(ss.x, ss.y, ss.z, 1e-6);
-      const stickyScale = isFinite(maxDim) && maxDim > 0.0001 ? 280 / maxDim : 300;
-      console.log('Sticky note size:', ss, '→ scale:', stickyScale);
-      phoneOffsets.forEach((x, i) => {
-        const sticky = template.clone(true);
-        sticky.scale.setScalar(stickyScale);
-        sticky.position.set(x, 60, -35);
-        scene.add(sticky);
-      });
-    }, undefined, err => console.error('Sticky note GLB load failed:', err));
 
     // ── Invisible hit planes for click detection (one per phone) ─────────
     // FrontSide only — clicking the back of the phone does nothing
