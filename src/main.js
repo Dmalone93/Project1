@@ -239,6 +239,9 @@ function createScreenObject(url) {
   iframe.style.height = '100%';
   iframe.style.border = 'none';
   iframe.style.display = 'block';
+  // Disabled initially so clicks pass through to the WebGL canvas for phone selection.
+  // focusPhone enables only the active screen; unfocusPhone disables all.
+  iframe.style.pointerEvents = 'none';
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
   wrap.appendChild(iframe);
 
@@ -742,7 +745,7 @@ function init() {
       lookTarget.set(0, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
-      css3dRenderer.domElement.style.pointerEvents = 'none'; // restore orbit
+      screenObjs.forEach(o => { o.element.style.pointerEvents = 'none'; });
       hidePanel(notesPanel);
       viewNotesBtn.style.display = 'none';
       nav.update(-1);
@@ -750,13 +753,16 @@ function init() {
 
     function focusPhone(index) {
       if (focusedPhone === index) return;
+      // Disable all iframes, then enable only the focused one
+      screenObjs.forEach((o, i) => {
+        o.element.style.pointerEvents = i === index ? 'auto' : 'none';
+      });
       focusedPhone = index;
       const x = phoneOffsets[index];
       camTarget.set(x, 60, FOCUSED_Z);
       lookTarget.set(x, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
-      css3dRenderer.domElement.style.pointerEvents = 'all'; // enable iframe interaction
       if (isMobile()) {
         // On mobile: hide any open panel and show the "View Notes" button instead
         hidePanel(notesPanel);
