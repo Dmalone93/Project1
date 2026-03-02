@@ -21,43 +21,44 @@ const STICKY_TEXTS = [
   'Quick Add to Cart',
 ];
 
+// Each insight is [sentiment, text] where sentiment is '+' (positive), '-' (negative), or '' (neutral).
 const INSIGHTS = [
   // Prototype 1
   [
-    'Image filter buttons were intuitive, with clear visibility of active vs. default states.',
-    '~60% missed the grid toggle; of those who noticed, half valued it for quick browsing while the rest had no interest in the feature.',
-    'Colour filters were popular but users gravitated toward filtering by colour over product type; moving colour into the filter panel had no notable UX impact.',
-    'Collection property scales were more informative than labels alone, giving users a clearer sense of collection DNA.',
-    'Users found the model size button on the product image very useful as it is information they look for when making a purchase. DFYNE staff noted that it would help users as sizing is a very common issue from customers.',
+    ['+', 'Image filter buttons were intuitive, with clear visibility of active vs. default states.'],
+    ['-', '~60% missed the grid toggle; of those who noticed, half valued it for quick browsing while the rest had no interest in the feature.'],
+    ['',  'Colour filters were popular but users gravitated toward filtering by colour over product type; moving colour into the filter panel had no notable UX impact.'],
+    ['+', 'Collection property scales were more informative than labels alone, giving users a clearer sense of collection DNA.'],
+    ['+', 'Users found the model size button on the product image very useful as it is information they look for when making a purchase. DFYNE staff noted that it would help users as sizing is a very common issue from customers.'],
   ],
   // Prototype 2
   [
-    'All users navigated back to the collection page via the breadcrumb bar.',
-    'Feature labels at the top of the collection were seen as useful and unobtrusive.',
-    'One user flagged the product type images as too large, consuming unnecessary space.',
-    'Colour filters were a standout — users bypassed product type images entirely and went straight to colour to find what they needed.',
-    'The combination of 3-column grid + colour filtering proved an effective way to quickly scan the full catalogue.',
+    ['+', 'All users navigated back to the collection page via the breadcrumb bar.'],
+    ['+', 'Feature labels at the top of the collection were seen as useful and unobtrusive.'],
+    ['-', 'One user flagged the product type images as too large, consuming unnecessary space.'],
+    ['+', 'Colour filters were a standout — users bypassed product type images entirely and went straight to colour to find what they needed.'],
+    ['+', 'The combination of 3-column grid + colour filtering proved an effective way to quickly scan the full catalogue.'],
   ],
   // Prototype 3
   [
-    'Users found the tab filter component clean and less invasive.',
-    'The feature containers (low-waist etc) were getting clicked like buttons.',
-    'Users did not like the placement of the more info — it distracted them from the tabs.',
-    'Users liked being able to see the number of products their query resulted in.',
-    'Users found the description modal information too busy.',
+    ['+', 'Users found the tab filter component clean and less invasive.'],
+    ['-', 'The feature containers (low-waist etc) were getting clicked like buttons.'],
+    ['-', 'Users did not like the placement of the more info — it distracted them from the tabs.'],
+    ['+', 'Users liked being able to see the number of products their query resulted in.'],
+    ['-', 'Users found the description modal information too busy.'],
   ],
   // Quick Add
   [
-    'All users had an initial reaction of delight when noticing the matching set feature in the quick add modal.',
-    'Users dislike upselling in the basket as it feels pushy — but serving products at the point of buying intent feels more organic.',
-    'Users were initially confused whether the single matching item was in their basket, but confidence grew when multiple products were shown in the container.',
-    'Feedback noted the add-to-cart felt too instant with no visual feedback — this has since been rectified.',
-    'Positive responses to the first modal screen — users liked seeing only relevant info, with the option to explore more on the product page.',
-    'Users praised the clean UI: size buttons were easy to tap and add to cart was intuitive.',
-    'Users very easily navigated back to the collection via the breadcrumb button on the product page.',
-    "When prompted to find a different colour, almost all users clicked '10 colors available' — they found it apparent and clear what the link would do.",
-    'All users agreed that adding the matching set at this point in their journey felt natural and delightful.',
-    'Users liked the "Continue Shopping" primary CTA — they dislike being pushed to checkout and appreciated having the option to return to the collection easily.',
+    ['+', 'All users had an initial reaction of delight when noticing the matching set feature in the quick add modal.'],
+    ['+', 'Users dislike upselling in the basket as it feels pushy — but serving products at the point of buying intent feels more organic.'],
+    ['-', 'Users were initially confused whether the single matching item was in their basket, but confidence grew when multiple products were shown in the container.'],
+    ['-', 'Feedback noted the add-to-cart felt too instant with no visual feedback — this has since been rectified.'],
+    ['+', 'Positive responses to the first modal screen — users liked seeing only relevant info, with the option to explore more on the product page.'],
+    ['+', 'Users praised the clean UI: size buttons were easy to tap and add to cart was intuitive.'],
+    ['+', 'Users very easily navigated back to the collection via the breadcrumb button on the product page.'],
+    ['+', "When prompted to find a different colour, almost all users clicked '10 colors available' — they found it apparent and clear what the link would do."],
+    ['+', 'All users agreed that adding the matching set at this point in their journey felt natural and delightful.'],
+    ['+', 'Users liked the "Continue Shopping" primary CTA — they dislike being pushed to checkout and appreciated having the option to return to the collection easily.'],
   ],
 ];
 
@@ -302,12 +303,15 @@ function createNotesPanel() {
 }
 
 function showPanel(panel, index, onClose) {
-  const insightsHTML = INSIGHTS[index].map(text =>
-    `<li style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;">
-       <span style="width:6px;height:6px;border-radius:50%;background:#646cff;margin-top:6px;flex-shrink:0;"></span>
+  const insightsHTML = INSIGHTS[index].map(([s, text]) => {
+    const dot  = s === '+' ? '#34c759' : s === '-' ? '#ff3b30' : '#646cff';
+    const bg   = s === '+' ? 'rgba(52,199,89,0.10)' : s === '-' ? 'rgba(255,59,48,0.08)' : 'transparent';
+    const pad  = s ? '6px 8px 6px 8px' : '0';
+    return `<li style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;background:${bg};border-radius:8px;padding:${pad};">
+       <span style="width:6px;height:6px;border-radius:50%;background:${dot};margin-top:6px;flex-shrink:0;"></span>
        <span style="font-size:13px;line-height:1.65;color:#3a3a3c;">${text}</span>
-     </li>`
-  ).join('');
+     </li>`;
+  }).join('');
 
   panel.innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;">
