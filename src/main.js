@@ -215,6 +215,9 @@ function createScreenObject(url) {
   wrap.style.width = `${SW}px`;
   wrap.style.height = `${SH}px`;
   wrap.style.overflow = 'hidden';
+  // Disabled by default so clicks fall through to the WebGL canvas.
+  // focusPhone enables only the active screen wrapper + its iframe.
+  wrap.style.pointerEvents = 'none';
   wrap.style.background = '#000';
   wrap.style.backfaceVisibility = 'hidden';
   wrap.style.webkitBackfaceVisibility = 'hidden';
@@ -745,7 +748,11 @@ function init() {
       lookTarget.set(0, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
-      screenObjs.forEach(o => { o.element.style.pointerEvents = 'none'; });
+      screenObjs.forEach(o => {
+        o.element.style.pointerEvents = 'none';
+        const f = o.element.querySelector('iframe');
+        if (f) f.style.pointerEvents = 'none';
+      });
       hidePanel(notesPanel);
       viewNotesBtn.style.display = 'none';
       nav.update(-1);
@@ -753,9 +760,12 @@ function init() {
 
     function focusPhone(index) {
       if (focusedPhone === index) return;
-      // Disable all iframes, then enable only the focused one
+      // Disable all screens, then enable only the focused one (wrap + iframe)
       screenObjs.forEach((o, i) => {
-        o.element.style.pointerEvents = i === index ? 'auto' : 'none';
+        const active = i === index;
+        o.element.style.pointerEvents = active ? 'auto' : 'none';
+        const f = o.element.querySelector('iframe');
+        if (f) f.style.pointerEvents = active ? 'auto' : 'none';
       });
       focusedPhone = index;
       const x = phoneOffsets[index];
