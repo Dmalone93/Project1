@@ -432,19 +432,22 @@ function createPhoneLabel(name) {
 }
 
 // Canvas-texture plane for sticky note text — renders in WebGL so depth
-// testing works correctly.  rotation.y=Math.PI makes it face the back-viewer;
-// flipping repeat.x corrects the horizontal mirror that rotation causes.
+// testing works correct.  rotation.y=Math.PI makes the plane face the
+// back-viewer but mirrors the texture; we pre-mirror the canvas drawing so
+// the two mirrors cancel and text reads correctly from behind.
 function makeStickyLabel(text) {
   const W = 512, H = 256;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, W, H);
+  // Pre-mirror horizontally so rotation.y=Math.PI cancels it back to readable
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.translate(-W, 0);
   ctx.fillStyle = '#3a2d00';
   ctx.font = 'bold 38px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  // Simple word-wrap
   const words = text.split(' ');
   const lines = [];
   let line = '';
@@ -457,10 +460,8 @@ function makeStickyLabel(text) {
   const lh = 52;
   const totalH = lines.length * lh;
   lines.forEach((l, i) => ctx.fillText(l, W / 2, H / 2 - totalH / 2 + i * lh + lh / 2));
+  ctx.restore();
   const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.repeat.x = -1;   // flip horizontally — corrects mirror from rotation.y=Math.PI
-  tex.offset.x = 1;
   return new THREE.Mesh(
     new THREE.PlaneGeometry(280, 140),
     new THREE.MeshBasicMaterial({ map: tex, transparent: true })
@@ -669,19 +670,28 @@ function init() {
     const stickyLoader = new GLTFLoader();
     stickyLoader.load('/outthere_sticky_note.glb', (stickyGltf) => {
       const template = stickyGltf.scene;
+      // Force all materials double-sided so the note is visible regardless of
+      // which direction the GLB faces in its local coordinate system.
+      template.traverse(child => {
+        if (!child.isMesh) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => { m.side = THREE.DoubleSide; m.needsUpdate = true; });
+      });
       template.updateMatrixWorld(true);
       const sb = new THREE.Box3().setFromObject(template);
       const ss = new THREE.Vector3();
       sb.getSize(ss);
-      const stickyScale = 280 / Math.max(ss.x, ss.y, 1e-6);
+      // Guard against a degenerate bounding box (empty scene, tiny geometry, etc.)
+      const maxDim = Math.max(ss.x, ss.y, ss.z, 1e-6);
+      const stickyScale = isFinite(maxDim) && maxDim > 0.0001 ? 280 / maxDim : 300;
+      console.log('Sticky note size:', ss, '→ scale:', stickyScale);
       phoneOffsets.forEach((x, i) => {
         const sticky = template.clone(true);
         sticky.scale.setScalar(stickyScale);
-        sticky.rotation.y = Math.PI; // front face of note faces back-viewer
         sticky.position.set(x, 60, -35);
         scene.add(sticky);
       });
-    }, undefined, err => console.warn('Sticky note GLB load failed:', err));
+    }, undefined, err => console.error('Sticky note GLB load failed:', err));
 
     // ── Invisible hit planes for click detection (one per phone) ─────────
     // FrontSide only — clicking the back of the phone does nothing
