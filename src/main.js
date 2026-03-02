@@ -302,7 +302,7 @@ function createNotesPanel() {
   return panel;
 }
 
-function showPanel(panel, index, onClose) {
+function showPanel(panel, index, onClose, navEl) {
   const insightsHTML = INSIGHTS[index].map(([s, text]) => {
     const dot  = s === '+' ? '#34c759' : s === '-' ? '#ff3b30' : '#646cff';
     const bg   = s === '+' ? 'rgba(52,199,89,0.10)' : s === '-' ? 'rgba(255,59,48,0.08)' : 'transparent';
@@ -326,6 +326,13 @@ function showPanel(panel, index, onClose) {
     <ul style="margin:0;padding:0;list-style:none;">${insightsHTML}</ul>
   `;
   panel.querySelector('#panel-close').onclick = onClose;
+  if (navEl) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'height:1px;background:rgba(0,0,0,0.08);margin:16px 0 12px;';
+    panel.appendChild(sep);
+    navEl.style.marginTop = '0';
+    panel.appendChild(navEl);
+  }
   panel.style.opacity = '1';
   panel.style.pointerEvents = 'auto';
   if (isMobile()) {
@@ -357,16 +364,11 @@ function hidePanel(panel) {
 // ── Phone nav controls ────────────────────────────────────────────────────────
 function createNavControls(onSelect) {
   const nav = document.createElement('div');
-  nav.style.position = 'fixed';
-  nav.style.bottom = '80px';
-  nav.style.left = '50%';
-  nav.style.transform = 'translateX(-50%)';
-  nav.style.zIndex = '10';
   nav.style.display = 'flex';
   nav.style.alignItems = 'center';
+  nav.style.justifyContent = 'center';
   nav.style.gap = '6px';
-  nav.style.background = 'rgba(255,255,255,0.72)';
-  nav.style.backdropFilter = 'blur(12px)';
+  nav.style.background = 'rgba(0,0,0,0.04)';
   nav.style.borderRadius = '28px';
   nav.style.padding = '6px 10px';
   nav.style.border = '1px solid rgba(0,0,0,0.08)';
@@ -394,7 +396,7 @@ function createNavControls(onSelect) {
   nextBtn.onclick = () => onSelect('next');
   nav.appendChild(nextBtn);
 
-  document.body.appendChild(nav);
+  // nav is NOT appended to body — caller embeds it inside the notes panel
 
   function update(activeIndex) {
     dotBtns.forEach((btn, i) => {
@@ -717,7 +719,7 @@ function init() {
     viewNotesBtn.style.cursor = 'pointer';
     viewNotesBtn.style.color = '#1c1c1e';
     viewNotesBtn.onclick = () => {
-      if (focusedPhone >= 0) showPanel(notesPanel, focusedPhone, () => hidePanel(notesPanel));
+      if (focusedPhone >= 0) showPanel(notesPanel, focusedPhone, () => hidePanel(notesPanel), nav.el);
     };
     document.body.appendChild(viewNotesBtn);
 
@@ -731,23 +733,7 @@ function init() {
       }
     });
 
-    // On mobile: move nav + viewNotesBtn into a shared flex row at top-right
-    if (isMobile()) {
-      const mobileCtrl = document.createElement('div');
-      mobileCtrl.style.cssText = 'position:fixed;top:20px;right:20px;display:flex;align-items:center;gap:8px;z-index:15;';
-      document.body.appendChild(mobileCtrl);
-      nav.el.remove();
-      nav.el.style.position = 'static';
-      nav.el.style.bottom = '';
-      nav.el.style.left = '';
-      nav.el.style.transform = '';
-      mobileCtrl.appendChild(nav.el);
-      viewNotesBtn.remove();
-      viewNotesBtn.style.position = 'static';
-      viewNotesBtn.style.top = '';
-      viewNotesBtn.style.right = '';
-      mobileCtrl.appendChild(viewNotesBtn);
-    }
+    // nav lives inside the notes panel — no separate fixed positioning needed
 
     function unfocusPhone() {
       if (focusedPhone === -1) return;
@@ -776,7 +762,7 @@ function init() {
         hidePanel(notesPanel);
         viewNotesBtn.style.display = 'block';
       } else {
-        showPanel(notesPanel, index, unfocusPhone);
+        showPanel(notesPanel, index, unfocusPhone, nav.el);
       }
       nav.update(index);
     }
