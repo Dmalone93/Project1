@@ -9,14 +9,16 @@ const SITES = [
   'https://theme-coup-83657991.figma.site',
   'https://dried-grasp-84721794.figma.site',
   'https://tiny-viral-56311712.figma.site',
+  'https://heart-engine-07151053.figma.site',
 ];
 
-const PROTO_NAMES = ['Prototype 1', 'Prototype 2', 'Prototype 3'];
+const PROTO_NAMES = ['Prototype 1', 'Prototype 2', 'Prototype 3', 'Quick Add'];
 
 const STICKY_TEXTS = [
   'Collection with smaller product type images',
   'Collection with colour filter type',
   'Collection with tabs for filters',
+  'Quick Add to Cart',
 ];
 
 const INSIGHTS = [
@@ -43,6 +45,10 @@ const INSIGHTS = [
     'Users did not like the placement of the more info — it distracted them from the tabs.',
     'Users liked being able to see the number of products their query resulted in.',
     'Users found the description modal information too busy.',
+  ],
+  // Quick Add
+  [
+    'User testing notes coming soon.',
   ],
 ];
 
@@ -497,13 +503,13 @@ function setupUI(css3dEl, controls, onEscape) {
 
 // ── Responsive overview distance ──────────────────────────────────────────────
 // On portrait mobile the horizontal FOV is narrow — push the camera back far
-// enough so all 3 phones are visible at once.
+// enough so all 4 phones are visible at once.
 function calcOverviewZ() {
   const aspect = window.innerWidth / window.innerHeight;
   const halfFovY = (45 / 2) * (Math.PI / 180);
   const halfFovX = Math.atan(Math.tan(halfFovY) * aspect);
-  // Need the frustum half-width ≥ outermost phone + padding
-  const needed = (PHONE_SPACING + 500) / Math.tan(halfFovX);
+  // Need the frustum half-width ≥ outermost phone (1.5 × spacing) + padding
+  const needed = (1.5 * PHONE_SPACING + 500) / Math.tan(halfFovX);
   return Math.max(CAM_Z, needed);
 }
 
@@ -531,7 +537,13 @@ function init() {
     css3dRenderer.domElement.style.pointerEvents = 'none';
     document.body.appendChild(css3dRenderer.domElement);
 
-    const phoneOffsets = [-PHONE_SPACING, 0, PHONE_SPACING];
+    // 4 phones evenly spaced, centred at x=0
+    const phoneOffsets = [
+      -1.5 * PHONE_SPACING,
+      -0.5 * PHONE_SPACING,
+       0.5 * PHONE_SPACING,
+       1.5 * PHONE_SPACING,
+    ];
     const screenObjs = SITES.map(url => {
       const obj = createScreenObject(url);
       css3dScene.add(obj);
