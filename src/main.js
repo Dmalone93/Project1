@@ -30,6 +30,10 @@ const INSIGHTS = [
     ['',  'Colour filters were popular but users gravitated toward filtering by colour over product type; moving colour into the filter panel had no notable UX impact.'],
     ['+', 'Collection property scales were more informative than labels alone, giving users a clearer sense of collection DNA.'],
     ['+', 'Users found the model size button on the product image very useful as it is information they look for when making a purchase. DFYNE staff noted that it would help users as sizing is a very common issue from customers.'],
+    ['',  'The user prefers a grid layout that she can change to allows her to scan a large amount of information quickly. She keeps her emails zoomed out to maximize visibility, which reflects her preference for seeing more content at once.'],
+    ['+', 'Including a clear collection summary (e.g., highlighting key features like low-waist, sculpting, seamless, etc.) on the collection page is highly valuable and improves the browsing experience.'],
+    ['-', 'Using DFYNE\'s true product colors instead of generic Shopify colors would create a more cohesive and premium brand feel.'],
+    ['-', 'Across the board, users showed a clear preference for smaller filter thumbnails, as they make the interface feel cleaner and easier to navigate.'],
   ],
   // Prototype 2
   [
