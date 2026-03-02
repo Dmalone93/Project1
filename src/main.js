@@ -559,12 +559,24 @@ function init() {
     });
 
     // ── Phone title labels ───────────────────────────────────────────────
-    const labelY = PH / 2 + 100; // just above the top of each phone
-    PROTO_NAMES.forEach((name, i) => {
+    const phoneLabels = PROTO_NAMES.map((name, i) => {
       const label = createPhoneLabel(name);
-      label.position.set(phoneOffsets[i], labelY, 0);
       css3dScene.add(label);
+      return label;
     });
+
+    function updateLabelLayout() {
+      const mobile = isMobile();
+      const y   = mobile ? -(PH / 2 + 80) : PH / 2 + 100;
+      const fs  = mobile ? '22px' : '38px';
+      const pad = mobile ? '5px 12px' : '7px 16px';
+      phoneLabels.forEach((label, i) => {
+        label.position.set(phoneOffsets[i], y, 0);
+        label.element.style.fontSize = fs;
+        label.element.style.padding  = pad;
+      });
+    }
+    updateLabelLayout();
 
     // ── WebGL renderer ───────────────────────────────────────────────────
     status('Starting renderer…');
@@ -885,6 +897,7 @@ function init() {
       renderer.setSize(w, h);
       css3dRenderer.setSize(w, h);
       // Recalculate overview distance for new orientation (e.g. portrait ↔ landscape)
+      updateLabelLayout();
       if (focusedPhone === -1) {
         const oz = calcOverviewZ();
         controls.maxDistance = Math.max(8000, oz * 1.5);
