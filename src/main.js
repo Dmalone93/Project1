@@ -38,11 +38,11 @@ const INSIGHTS = [
   ],
   // Prototype 3
   [
-    'Users praised the clean UI: size buttons were easy to tap and add to cart was intuitive.',
-    'Users effortlessly navigated back to the collection via the breadcrumb button on the product page.',
-    "When prompted to find a different colour, almost all users clicked '10 colors available' — they found it clear and obvious.",
-    'All users agreed that adding the matching set at this stage in their journey felt natural and delightful.',
-    'The "Continue Shopping" primary CTA was well received — users liked not being pushed to checkout and found it easy to return to the collection.',
+    'Users found the tab filter component clean and less invasive.',
+    'The feature containers (low-waist etc) were getting clicked like buttons.',
+    'Users did not like the placement of the more info — it distracted them from the tabs.',
+    'Users liked being able to see the number of products their query resulted in.',
+    'Users found the description modal information too busy.',
   ],
 ];
 
