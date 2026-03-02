@@ -13,6 +13,12 @@ const SITES = [
 
 const PROTO_NAMES = ['Prototype 1', 'Prototype 2', 'Prototype 3'];
 
+const STICKY_TEXTS = [
+  'Collection with smaller product type images',
+  'Collection with colour filter type',
+  'Collection with tabs for filters',
+];
+
 const INSIGHTS = [
   // Prototype 1
   [
@@ -597,6 +603,46 @@ function init() {
       console.error('GLB load error:', err);
       status('ERR: could not load GLTF model — check console');
     });
+
+    // ── Sticky note GLB + text overlays on the back of each phone ────────
+    // CSS3DObject with rotation.y = Math.PI faces backwards; scaleX(-1) on the
+    // inner div un-mirrors the text so it reads correctly when viewed from behind.
+    STICKY_TEXTS.forEach((text, i) => {
+      const inner = document.createElement('div');
+      inner.textContent = text;
+      inner.style.width = '220px';
+      inner.style.fontFamily = "-apple-system, 'Segoe UI', sans-serif";
+      inner.style.fontSize = '18px';
+      inner.style.fontWeight = '600';
+      inner.style.lineHeight = '1.45';
+      inner.style.color = '#3d3000';
+      inner.style.textAlign = 'center';
+      inner.style.pointerEvents = 'none';
+      inner.style.transform = 'scaleX(-1)'; // cancel mirror from rotation.y = π
+      const wrapper = document.createElement('div');
+      wrapper.appendChild(inner);
+      const obj = new CSS3DObject(wrapper);
+      obj.position.set(phoneOffsets[i], 60, -22);
+      obj.rotation.y = Math.PI;
+      css3dScene.add(obj);
+    });
+
+    const stickyLoader = new GLTFLoader();
+    stickyLoader.load('/outthere_sticky_note.glb', (stickyGltf) => {
+      const template = stickyGltf.scene;
+      template.updateMatrixWorld(true);
+      const sb = new THREE.Box3().setFromObject(template);
+      const ss = new THREE.Vector3();
+      sb.getSize(ss);
+      const stickyScale = 280 / Math.max(ss.x, ss.y, 1e-6);
+      phoneOffsets.forEach((x, i) => {
+        const sticky = template.clone(true);
+        sticky.scale.setScalar(stickyScale);
+        sticky.rotation.y = Math.PI; // face toward back-viewer
+        sticky.position.set(x, 60, -20);
+        scene.add(sticky);
+      });
+    }, undefined, err => console.warn('Sticky note GLB load failed:', err));
 
     // ── Invisible hit planes for click detection (one per phone) ─────────
     // FrontSide only — clicking the back of the phone does nothing
