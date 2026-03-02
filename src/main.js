@@ -501,6 +501,20 @@ function calcOverviewZ() {
   return Math.max(CAM_Z, needed);
 }
 
+// Responsive focused distance — ensures the full phone body stays in frame on
+// any screen size.  On narrow mobile viewports the horizontal FOV is very small
+// so we must push the camera further back than the desktop FOCUSED_Z constant.
+function calcFocusedZ() {
+  const aspect = window.innerWidth / window.innerHeight;
+  const halfFovY = (45 / 2) * (Math.PI / 180);
+  const halfFovX = Math.atan(Math.tan(halfFovY) * aspect);
+  // Width: keep phone within 80% of screen width
+  const neededForW = (PW / 2) / (0.80 * Math.tan(halfFovX));
+  // Height: camera sits 60 units above centre so bottom of phone is PH/2+60
+  const neededForH = (PH / 2 + 60) / (0.88 * Math.tan(halfFovY));
+  return Math.max(neededForW, neededForH, FOCUSED_Z);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 function init() {
   try {
@@ -775,7 +789,7 @@ function init() {
       });
       focusedPhone = index;
       const x = phoneOffsets[index];
-      camTarget.set(x, 60, FOCUSED_Z);
+      camTarget.set(x, 60, calcFocusedZ());
       lookTarget.set(x, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
