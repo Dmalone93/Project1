@@ -308,7 +308,7 @@ function createNotesPanel() {
   return panel;
 }
 
-function showPanel(panel, index, onClose, navEl) {
+function showPanel(panel, index, onClose) {
   const insightsHTML = INSIGHTS[index].map(([s, text]) => {
     const dot  = s === '+' ? '#34c759' : s === '-' ? '#ff3b30' : '#646cff';
     const bg   = s === '+' ? 'rgba(52,199,89,0.10)' : s === '-' ? 'rgba(255,59,48,0.08)' : 'transparent';
@@ -332,13 +332,6 @@ function showPanel(panel, index, onClose, navEl) {
     <ul style="margin:0;padding:0;list-style:none;">${insightsHTML}</ul>
   `;
   panel.querySelector('#panel-close').onclick = onClose;
-  if (navEl) {
-    const sep = document.createElement('div');
-    sep.style.cssText = 'height:1px;background:rgba(0,0,0,0.08);margin:16px 0 12px;';
-    panel.appendChild(sep);
-    navEl.style.marginTop = '0';
-    panel.appendChild(navEl);
-  }
   panel.style.opacity = '1';
   panel.style.pointerEvents = 'auto';
   if (isMobile()) {
@@ -374,10 +367,13 @@ function createNavControls(onSelect) {
   nav.style.alignItems = 'center';
   nav.style.justifyContent = 'center';
   nav.style.gap = '6px';
-  nav.style.background = 'rgba(0,0,0,0.04)';
+  nav.style.background = 'rgba(255,255,255,0.88)';
+  nav.style.backdropFilter = 'blur(12px)';
+  nav.style.webkitBackdropFilter = 'blur(12px)';
   nav.style.borderRadius = '28px';
   nav.style.padding = '6px 10px';
-  nav.style.border = '1px solid rgba(0,0,0,0.08)';
+  nav.style.border = '1px solid rgba(0,0,0,0.10)';
+  nav.style.boxShadow = '0 4px 20px rgba(0,0,0,0.10)';
   nav.style.fontFamily = '-apple-system, sans-serif';
 
   const prevBtn = document.createElement('button');
@@ -401,8 +397,6 @@ function createNavControls(onSelect) {
   styleNavBtn(nextBtn, false);
   nextBtn.onclick = () => onSelect('next');
   nav.appendChild(nextBtn);
-
-  // nav is NOT appended to body — caller embeds it inside the notes panel
 
   function update(activeIndex) {
     dotBtns.forEach((btn, i) => {
@@ -530,6 +524,12 @@ function init() {
     css3dRenderer.domElement.style.zIndex = '1';
     css3dRenderer.domElement.style.pointerEvents = 'none';
     document.body.appendChild(css3dRenderer.domElement);
+    // CSS3DRenderer creates an internal cameraElement child div that defaults to
+    // pointer-events:auto. Setting 'none' on the parent alone doesn't block it —
+    // we must disable the child directly so clicks reach the WebGL canvas below.
+    if (css3dRenderer.domElement.firstChild) {
+      css3dRenderer.domElement.firstChild.style.pointerEvents = 'none';
+    }
 
     // 4 phones evenly spaced, centred at x=0
     const phoneOffsets = [
@@ -709,10 +709,6 @@ function init() {
     // Mobile "View Notes" button — replaces the auto-show side panel on small screens
     const viewNotesBtn = document.createElement('button');
     viewNotesBtn.textContent = 'View Notes';
-    viewNotesBtn.style.position = 'fixed';
-    viewNotesBtn.style.top = '20px';
-    viewNotesBtn.style.right = '20px';
-    viewNotesBtn.style.zIndex = '15';
     viewNotesBtn.style.display = 'none';
     viewNotesBtn.style.background = 'rgba(255,255,255,0.88)';
     viewNotesBtn.style.backdropFilter = 'blur(12px)';
@@ -725,9 +721,8 @@ function init() {
     viewNotesBtn.style.cursor = 'pointer';
     viewNotesBtn.style.color = '#1c1c1e';
     viewNotesBtn.onclick = () => {
-      if (focusedPhone >= 0) showPanel(notesPanel, focusedPhone, () => hidePanel(notesPanel), nav.el);
+      if (focusedPhone >= 0) showPanel(notesPanel, focusedPhone, () => hidePanel(notesPanel));
     };
-    document.body.appendChild(viewNotesBtn);
 
     const nav = createNavControls((target) => {
       if (target === 'prev') {
@@ -739,7 +734,18 @@ function init() {
       }
     });
 
-    // nav lives inside the notes panel — no separate fixed positioning needed
+    // Top-right bar — nav numbers + "View Notes" always sit here together
+    const topRightBar = document.createElement('div');
+    topRightBar.style.position = 'fixed';
+    topRightBar.style.top = '20px';
+    topRightBar.style.right = '20px';
+    topRightBar.style.zIndex = '20';
+    topRightBar.style.display = 'flex';
+    topRightBar.style.alignItems = 'center';
+    topRightBar.style.gap = '8px';
+    topRightBar.appendChild(nav.el);
+    topRightBar.appendChild(viewNotesBtn);
+    document.body.appendChild(topRightBar);
 
     function unfocusPhone() {
       if (focusedPhone === -1) return;
@@ -773,12 +779,11 @@ function init() {
       lookTarget.set(x, 0, 0);
       isCamAnimating = true;
       controls.enabled = false;
+      viewNotesBtn.style.display = 'block';
       if (isMobile()) {
-        // On mobile: hide any open panel and show the "View Notes" button instead
         hidePanel(notesPanel);
-        viewNotesBtn.style.display = 'block';
       } else {
-        showPanel(notesPanel, index, unfocusPhone, nav.el);
+        showPanel(notesPanel, index, unfocusPhone);
       }
       nav.update(index);
     }
