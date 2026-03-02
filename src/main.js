@@ -12,7 +12,7 @@ const SITES = [
   'https://heart-engine-07151053.figma.site',
 ];
 
-const PROTO_NAMES = ['Collection with Small Product Type Images', 'Collection with Colour Filter', 'Collection with Tabs', 'Quick Add'];
+const PROTO_NAMES = ['Collection with Small Product Type Images', 'Collection with Colour Filter', 'Collection with Tabs', 'Quick Add with Matching Set feature'];
 
 const STICKY_TEXTS = [
   'Collection with smaller product type images',
