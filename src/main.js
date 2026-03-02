@@ -658,7 +658,7 @@ function init() {
 
     // Mobile "View Notes" button — replaces the auto-show side panel on small screens
     const viewNotesBtn = document.createElement('button');
-    viewNotesBtn.textContent = 'View Notes';
+    viewNotesBtn.textContent = 'User Testing Notes';
     viewNotesBtn.style.display = 'none';
     viewNotesBtn.style.background = 'rgba(255,255,255,0.88)';
     viewNotesBtn.style.backdropFilter = 'blur(12px)';
