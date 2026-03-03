@@ -10,9 +10,10 @@ const SITES = [
   'https://dried-grasp-84721794.figma.site',
   'https://tiny-viral-56311712.figma.site',
   'https://heart-engine-07151053.figma.site',
+  'https://faqprototype.vercel.app/',
 ];
 
-const PROTO_NAMES = ['Collection with Small Product Type Images', 'Collection with Colour Filter', 'Collection with Tabs', 'Quick Add with Matching Set feature'];
+const PROTO_NAMES = ['Collection with Small Product Type Images', 'Collection with Colour Filter', 'Collection with Tabs', 'Quick Add with Matching Set feature', 'FAQ / Contact Us'];
 
 
 // Each insight is [sentiment, text] where sentiment is '+' (positive), '-' (negative), or '' (neutral).
@@ -60,6 +61,8 @@ const INSIGHTS = [
     ['+', 'All users agreed that adding the matching set at this point in their journey felt natural and delightful.'],
     ['+', 'Users liked the "Continue Shopping" primary CTA — they dislike being pushed to checkout and appreciated having the option to return to the collection easily.'],
   ],
+  // FAQ / Contact Us
+  [],
 ];
 
 // iPhone dimensions (393×852 screen, scaled to PH)
@@ -460,8 +463,8 @@ function calcOverviewZ() {
   const aspect = window.innerWidth / window.innerHeight;
   const halfFovY = (45 / 2) * (Math.PI / 180);
   const halfFovX = Math.atan(Math.tan(halfFovY) * aspect);
-  // Need the frustum half-width ≥ outermost phone (1.5 × spacing) + padding
-  const needed = (1.5 * PHONE_SPACING + 500) / Math.tan(halfFovX);
+  // Need the frustum half-width ≥ outermost phone (2 × spacing) + padding
+  const needed = (2 * PHONE_SPACING + 500) / Math.tan(halfFovX);
   return Math.max(CAM_Z, needed);
 }
 
@@ -509,12 +512,13 @@ function init() {
       css3dRenderer.domElement.firstChild.style.pointerEvents = 'none';
     }
 
-    // 4 phones evenly spaced, centred at x=0
+    // 5 phones evenly spaced, centred at x=0
     const phoneOffsets = [
-      -1.5 * PHONE_SPACING,
-      -0.5 * PHONE_SPACING,
-       0.5 * PHONE_SPACING,
-       1.5 * PHONE_SPACING,
+      -2 * PHONE_SPACING,
+      -1 * PHONE_SPACING,
+       0 * PHONE_SPACING,
+       1 * PHONE_SPACING,
+       2 * PHONE_SPACING,
     ];
     const screenObjs = SITES.map(url => {
       const obj = createScreenObject(url);
